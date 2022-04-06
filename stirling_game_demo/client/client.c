@@ -329,7 +329,7 @@ static void receive_udp_packet(const struct dc_posix_env *env, struct dc_error *
     free_client_entities_list(&clientInfo->client_entities);
     fill_entities_list(&clientInfo->client_entities, buffer + header_size, num_entities);
     free_bullet_list(&clientInfo->bulletList);
-    fill_bullet_list(&clientInfo->bulletList, buffer + header_size + 6 * num_entities, num_bullets);
+    fill_bullet_list(&clientInfo->bulletList, buffer + header_size + entity_packet_size * num_entities, num_bullets);
     free(buffer);
     //update_player_position(clientInfo);
     draw_game(clientInfo);
@@ -522,10 +522,6 @@ void * ncurses_thread(client_info *clientInfo) {
     }
 
     endwin();
-
-
-
-
 
 //    const struct timeval tick_rate = {0, 10000};
 //    struct timeval t1, t2;
