@@ -32,15 +32,15 @@
 #include "types.h"
 
 static volatile sig_atomic_t           exit_flag;
-
-static void                            quit_handler(int sig_num);
+static int                             sent     = 0;
+static int                             received = 0;
 
 static struct dc_application_settings *create_settings(const struct dc_posix_env *env, struct dc_error *err)
 {
-    struct ncurses_client_application_settings *settings;
+    struct application_settings *settings;
 
     DC_TRACE(env);
-    settings = dc_malloc(env, err, sizeof(struct ncurses_client_application_settings));
+    settings = dc_malloc(env, err, sizeof(struct application_settings));
 
     if(settings == NULL)
     {
@@ -108,15 +108,15 @@ static int destroy_settings(const struct dc_posix_env               *env,
                             __attribute__((unused)) struct dc_error *err,
                             struct dc_application_settings         **psettings)
 {
-    struct ncurses_client_application_settings *app_settings;
+    struct application_settings *app_settings;
 
     DC_TRACE(env);
-    app_settings = (struct ncurses_client_application_settings *)*psettings;
+    app_settings = (struct application_settings *)*psettings;
     dc_setting_string_destroy(env, &app_settings->server_ip);
     dc_setting_uint16_destroy(env, &app_settings->server_tcp_port);
     dc_setting_uint16_destroy(env, &app_settings->server_udp_port);
     dc_free(env, app_settings->opts.opts, app_settings->opts.opts_count);
-    dc_free(env, *psettings, sizeof(struct ncurses_client_application_settings));
+    dc_free(env, *psettings, sizeof(struct application_settings));
 
     if(env->null_free)
     {
@@ -140,7 +140,13 @@ int main(int argc, char *argv[])
     //    tracer = trace_reporter;
     dc_error_init(&err, reporter);
     dc_posix_env_init(&env, tracer);
-    info    = dc_application_info_create(&env, &err, "NCurses Client");
+    info = dc_application_info_create(&env, &err, "NCurses Client");
+
+    struct sigaction sa;
+    sa.sa_handler = &signal_handler;
+    sa.sa_flags   = 0;
+    dc_sigaction(&env, &err, SIGINT, &sa, NULL);
+    dc_sigaction(&env, &err, SIGTERM, &sa, NULL);
 
     ret_val = dc_application_run(&env,
                                  &err,
@@ -156,17 +162,18 @@ int main(int argc, char *argv[])
     dc_application_info_destroy(&env, &info);
     dc_error_reset(&err);
     endwin();
+    printf("sent: %d\nreceived: %d\n", sent, received);
 
     return ret_val;
 }
 
 static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_application_settings *settings)
 {
-    struct ncurses_client_application_settings *app_settings;
+    struct application_settings *app_settings;
 
     DC_TRACE(env);
 
-    app_settings          = (struct ncurses_client_application_settings *)settings;
+    app_settings          = (struct application_settings *)settings;
 
     // TCP
     int tcp_server_socket = connect_to_tcp_server(env,
@@ -203,8 +210,8 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     bool    exitFlag = false;
 
     // wait for server to give you an ID
-    ssize_t count    = dc_read(env, err, tcp_server_socket, server_message, sizeof(server_message));
-    if(count <= 0)
+    ssize_t sent     = dc_read(env, err, tcp_server_socket, server_message, sizeof(server_message));
+    if(sent <= 0)
     {
         printf("could not get ID\n");
         exit(1);
@@ -242,10 +249,10 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
         if(timeout.tv_usec == 0)
         {
             timeout.tv_usec = tick_rate.tv_usec;
-            // printf("putting out packet %lu\n", clientInfo->last_packet_sent + 1);
+            //            printf("putting out packet %lu\n", clientInfo->last_packet_sent + 1);
             send_game_state(clientInfo, udp_server_sd);
+            sent++;
         }
-
         FD_ZERO(&readfds);
         FD_SET(udp_server_sd, &readfds);
         FD_SET(tcp_server_socket, &readfds);
@@ -267,6 +274,7 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
             // check for udp messages
             if(FD_ISSET(udp_server_sd, &readfds))
             {
+                received++;
                 receive_udp_packet(env, err, clientInfo);
             }
 
@@ -295,7 +303,7 @@ static void receive_udp_packet(const struct dc_posix_env *env, struct dc_error *
     ssize_t header_size        = 12;
     ssize_t entity_packet_size = 6;
     ssize_t bullet_packet_size = 4;
-    // printf("recv udp packet\n");
+    //    printf("recv udp packet\n");
     ssize_t count;
     count = recvfrom(clientInfo->udp_socket, header, (size_t)header_size, MSG_PEEK | MSG_WAITALL, NULL, NULL);
     // printf("count %zd\n", count);
@@ -502,6 +510,7 @@ void *ncurses_thread(client_info *clientInfo)
         switch(key)
         {
             case MOVE_UP:
+                printw("up:");
                 clientInfo->clientInputState.move_up = true;
                 break;
             case MOVE_LEFT:
@@ -618,8 +627,8 @@ void move_player(client *client_entity, int direction_x, int direction_y)
     client_entity->position_y += direction_y;
 }
 
-static void quit_handler(int sig_num)
+void signal_handler(__attribute__((unused)) int signnum)
 {
-    display("exit flag set");
+    printf("\nexit flag set\n");
     exit_flag = 1;
 }
