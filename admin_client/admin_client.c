@@ -1,5 +1,5 @@
 #include "admin_client.h"
-#include "client.h"
+#include "ncurses_client.h"
 
 int main(int argc, char *argv[])
 {
