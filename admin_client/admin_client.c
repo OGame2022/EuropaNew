@@ -173,7 +173,6 @@ static int destroy_settings(const struct dc_posix_env *env,
     return 0;
 }
 
-
 static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_application_settings *settings)
 {
     struct application_settings *app_settings;

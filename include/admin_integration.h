@@ -70,8 +70,7 @@ typedef struct {
     admin_client * adminClientList[MAX_ADMIN_CLIENTS];
 } admin_server_info;
 
-void
-admin_readPacketFromSocket(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo,
+void admin_readPacketFromSocket(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo,
                            uint16_t admin_id, admin_client_packet *adminClientPacket, int admin_socket);
 
 void admin_receiveTcpPacket(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo, server_info *serverInfo, uint16_t admin_id);
