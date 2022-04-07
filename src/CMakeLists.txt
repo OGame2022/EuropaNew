@@ -34,7 +34,6 @@ target_link_directories(admin_client PRIVATE /usr/lib)
 target_link_directories(admin_client PRIVATE /usr/local/lib)
 
 
-
 # All users of this library will need at least C11
 target_compile_features(server PUBLIC c_std_11)
 target_compile_options(server PRIVATE -g)
@@ -63,8 +62,9 @@ find_library(LIBDC_POSIX dc_posix REQUIRED)
 find_library(LIBDC_UTIL dc_util REQUIRED)
 find_library(LIBDC_FSM dc_fsm REQUIRED)
 find_package(Threads)
-find_package(Curses REQUIRED)
+find_library(CURSES_LIBRARIES ncurses REQUIRED)
 find_library(LIBDC_APPLICATION dc_application REQUIRED)
+
 target_link_libraries(server PRIVATE ${LIBM})
 target_link_libraries(server PRIVATE ${LIBDC_ERROR})
 target_link_libraries(server PRIVATE ${LIBDC_POSIX})

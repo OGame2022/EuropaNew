@@ -211,6 +211,7 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
         printf("could not get ID\n");
         exit(1);
     }
+
     // get id from server
     //char * tempID = strdup("001");
     uint16_t client_id = (uint16_t) (server_message[0] | (uint16_t) server_message[1] << 8);
@@ -307,6 +308,7 @@ static void receive_udp_packet(const struct dc_posix_env *env, struct dc_error *
         //printf("packet not fully received\n");
         return;
     }
+
     uint64_t packet_no = (uint64_t) ((uint64_t) header[7] | (uint64_t) header[6] << 8 | (uint64_t) header[5] << 16 | (uint64_t) header[4] << 24 | (uint64_t) header[3] << 32 | (uint64_t) header[2] << 40 | (uint64_t) header[1] << 48 | (uint64_t) header[0] << 56);
     uint16_t num_entities = (uint16_t) (header[8] | (uint16_t) header[9] << 8);
     uint16_t num_bullets = (uint16_t) (header[10] | (uint16_t) header[11] << 8);
