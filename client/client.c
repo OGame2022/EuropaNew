@@ -507,14 +507,13 @@ void * ncurses_thread(client_info *clientInfo) {
             case KEY_RIGHT:
                 clientInfo->clientInputState.shoot_right = true;
                 break;
+//            case CHAT_KEY:
+//                clientInfo->clientInputState.shoot_right = true;
+//                break;
             default:
                 break;
         }
         //draw_game(clientInfo);
-
-
-
-
 
         //mvaddch(clientInfo->client_entity->position_x, clientInfo->client_entity->position_y, '0');
         //printw("\n");

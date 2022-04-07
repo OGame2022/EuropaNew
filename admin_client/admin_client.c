@@ -223,6 +223,7 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
 
             // check for udp messages
             if(FD_ISSET(STDIN_FILENO, &readfds)) {
+
             }
 
             // check for new client connections

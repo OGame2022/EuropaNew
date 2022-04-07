@@ -8,6 +8,4 @@
 #endif //STIRLING_GAME_DEMO_CHAT_INTEGRATION_H
 
 
-void * runChatServer() {
-
-}
+void * runChatServer(void);

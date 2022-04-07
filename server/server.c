@@ -478,7 +478,7 @@ static void send_game_state(server_info *serverInfo, int udp_socket) {
     header[10] = num_bullets & 0xFF;
     header[11] = num_bullets >> 8;
 
-    uint8_t * entity_list = calloc(num_entities, 6);
+    uint8_t * entity_list = calloc(num_entities, entity_packet_size);
 
     uint16_t entities_added = 0;
     size_t shift = 0;
@@ -512,7 +512,7 @@ static void send_game_state(server_info *serverInfo, int udp_socket) {
         bulletNode = bulletNode->next;
     }
 
-    size_t buffer_size = entities_added * 6 + bullets_added * bullet_packet_size + header_size;
+    size_t buffer_size = entities_added * entity_packet_size + bullets_added * bullet_packet_size + header_size;
     uint8_t * buffer = calloc(buffer_size, 1);
     memcpy(buffer, header, header_size);
     memcpy((buffer + header_size), entity_list, entities_added * entity_packet_size);
