@@ -37,6 +37,7 @@ set(CLIENT_SOURCE_LIST
         )
 
 set(ADMIN_CLIENT_SOURCE_LIST
+        "${stirling_game_demo_SOURCE_DIR}/util/network_util.c"
         "${stirling_game_demo_SOURCE_DIR}/include/admin_client.h"
         )
 

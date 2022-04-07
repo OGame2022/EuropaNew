@@ -33,10 +33,10 @@ int main(int argc, char *argv[])
 
 static struct dc_application_settings *create_settings(const struct dc_posix_env *env, struct dc_error *err)
 {
-    struct application_settings *settings;
+    struct admin_application_settings *settings;
 
     DC_TRACE(env);
-    settings = dc_malloc(env, err, sizeof(struct application_settings));
+    settings = dc_malloc(env, err, sizeof(struct admin_application_settings));
 
     if(settings == NULL)
     {
@@ -44,13 +44,10 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
     }
 
     settings->opts.parent.config_path = dc_setting_path_create(env, err);
-    settings->start_time = dc_setting_string_create(env, err);
-    settings->server_ip = dc_setting_string_create(env, err);
-    settings->server_udp_port = dc_setting_uint16_create(env, err);
-    settings->server_tcp_port = dc_setting_uint16_create(env, err);
-    settings->num_packets = dc_setting_uint16_create(env, err);
-    settings->packet_size = dc_setting_uint16_create(env, err);
-    settings->packet_delay = dc_setting_uint16_create(env, err);
+    settings->verbose       = dc_setting_bool_create(env, err);
+    settings->hostname      = dc_setting_string_create(env, err);
+    settings->port          = dc_setting_uint16_create(env, err);
+
     struct options opts[] = {
             {(struct dc_setting *)settings->opts.parent.config_path,
                     dc_options_set_path,
@@ -62,8 +59,8 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
                     NULL,
                     dc_string_from_config,
                     NULL},
-            {(struct dc_setting *)settings->start_time,
-                    dc_options_set_string,
+            {(struct dc_setting *)settings->verbose,
+                    dc_options_set_bool,
                     "start_time",
                     required_argument,
                     's',
@@ -84,46 +81,15 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
                     DEFAULT_HOSTNAME},
             {(struct dc_setting *)settings->port,
                     dc_options_set_uint16,
-                    "server_tcp_port",
+                    "port",
                     required_argument,
-                    't',
-                    "SERVER_TCP_PORT",
+                    'p',
+                    "PORT",
                     dc_uint16_from_string,
                     "server_tcp_port",
                     dc_uint16_from_config,
-                    dc_uint16_from_string(env, err, DEFAULT_TCP_PORT)},
-            {(struct dc_setting *)settings->num_packets,
-                    dc_options_set_uint16,
-                    "num_packets",
-                    required_argument,
-                    'n',
-                    "NUM_PACKETS",
-                    dc_uint16_from_string,
-                    "num_packets",
-                    dc_uint16_from_config,
-                    dc_uint16_from_string(env, err, "100")},
-            {(struct dc_setting *)settings->packet_size,
-                    dc_options_set_uint16,
-                    "packet_size",
-                    required_argument,
-                    's',
-                    "PACKET_SIZE",
-                    dc_uint16_from_string,
-                    "packet_size",
-                    dc_uint16_from_config,
-                    dc_uint16_from_string(env, err, "100")},
-            {(struct dc_setting *)settings->packet_delay,
-                    dc_options_set_uint16,
-                    "packet_delay",
-                    required_argument,
-                    'd',
-                    "PACKET_DELAY",
-                    dc_uint16_from_string,
-                    "packet_delay",
-                    dc_uint16_from_config,
-                    dc_uint16_from_string(env, err, "1")}
-
-    };
+                    dc_uint16_from_string(env, err, DEFAULT_PORT)},
+                };
 
     // note the trick here - we use calloc and add 1 to ensure the last line is all 0/NULL
     settings->opts.opts_count = (sizeof(opts) / sizeof(struct options)) + 1;
@@ -143,11 +109,12 @@ static int destroy_settings(const struct dc_posix_env *env,
     struct admin_application_settings *app_settings;
 
     DC_TRACE(env);
-    app_settings = (struct application_settings *)*psettings;
-    dc_setting_string_destroy(env, &app_settings->start_time);
-    dc_setting_string_destroy(env, &app_settings->server_ip);
+    app_settings = (struct admin_application_settings *)*psettings;
+    dc_setting_bool_destroy(env, &app_settings->verbose);
+    dc_setting_string_destroy(env, &app_settings->hostname);
+    dc_setting_uint16_destroy(env, &app_settings->port);
     dc_free(env, app_settings->opts.opts, app_settings->opts.opts_count);
-    dc_free(env, *psettings, sizeof(struct application_settings));
+    dc_free(env, *psettings, sizeof(struct admin_application_settings));
 
     if(env->null_free)
     {

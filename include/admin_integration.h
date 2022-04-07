@@ -50,7 +50,8 @@ enum ADMIN_COMMANDS {
     USERS,
     KICK,
     WARN,
-    NOTICE
+    NOTICE,
+    NOT_RECOGNIZED
 };
 
 typedef struct {
