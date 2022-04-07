@@ -47,9 +47,28 @@ Technologies used for this project:
 - Template
 
 ## Installation
-```sudo chmod +x ./dc-game-setup.sh```
+## Setup
+```
+mkdir cmake-build-debug
+```
 
-```sudo ./dc-game-setup.sh <path/to/target_folder>  # will create the dir if it doesn't exist```
+```
+cmake -DCMAKE_C_COMPILER="gcc" -DCMAKE_CXX_COMPILER="g++" -S . -B cmake-build-debug
+```
+or:
+
+```
+cmake -DCMAKE_C_COMPILER="clang" -DCMAKE_CXX_COMPILER="clang++" -S . -B cmake-build-debug
+```
+
+## Build
+Examples:
+```
+cmake --build cmake-build-debug
+cmake --build cmake-build-debug --clean-first
+cmake --build cmake-build-debug --target docs
+cmake --build cmake-build-debug --target format
+```
 
 ## Development
 Want to contribute and help us grow? Perfect!
@@ -63,6 +82,7 @@ To fix a bug or enhance an existing module or add a new feature, follow the foll
 - Commit your changes (`git commit -am 'Improve feature'`)
 - Push to the branch (`git push origin improve-feature`)
 - Create a Pull Request
+
 ## Bugs/Issues
 If you notice bugs on the website, feel free to contact us directly by sending us messages on Facebook or open an issue [here](https://github.com/OGame2022/Europa/issues).
 

@@ -18,7 +18,7 @@
 #include "common.h"
 #include <stdio.h>
 
-int display(const char *str)
+static int display(const char *str)
 {
     printf("%s\n", str);
 

@@ -31,33 +31,27 @@
 #include <time.h>
 #include <dc_posix/dc_fcntl.h>
 
-#include "common.h";
-
+#include "common.h"
 
 #define ADMIN_HEADER_SIZE 6
-
-
-// arbritrary number, enough for the whole class to be connected
 #define MAX_ADMIN_CLIENTS 15
-
 #define ADMIN_PROTOCOL_VERSION 1
-
 
 typedef struct {
     uint8_t version;
     uint8_t command;
     uint16_t target_client_id;
     uint16_t message_length;
-    uint8_t * message;
+    char * message;
 } admin_client_packet;
-
 
 enum ADMIN_COMMANDS {
     STOP,
-    COUNT,
+    USERS,
     KICK,
     WARN,
-    NOTICE
+    NOTICE,
+    NOT_RECOGNIZED
 };
 
 typedef struct {

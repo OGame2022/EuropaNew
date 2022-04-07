@@ -15,10 +15,10 @@ set(HEADER_LIST
         "${stirling_game_demo_SOURCE_DIR}/include/default_config.h"
         "${stirling_game_demo_SOURCE_DIR}/include/admin_integration.h"
         "${stirling_game_demo_SOURCE_DIR}/include/server.h"
-        "${stirling_game_demo_SOURCE_DIR}/include/client.h"
         "${stirling_game_demo_SOURCE_DIR}/include/admin_client.h"
         "${stirling_game_demo_SOURCE_DIR}/include/chat_server.h"
         "${stirling_game_demo_SOURCE_DIR}/include/ncurses_client.h"
+        "${stirling_game_demo_SOURCE_DIR}/include/sdl_client.h"
         )
 
 set(COMMON_SOURCE_LIST
@@ -31,21 +31,28 @@ set(SERVER_SOURCE_LIST
         "${stirling_game_demo_SOURCE_DIR}/src/chat_server.c"
         )
 
-set(CLIENT_SOURCE_LIST
+set(NCURSES_CLIENT_SOURCE_LIST
         "${stirling_game_demo_SOURCE_DIR}/util/network_util.c"
-        "${stirling_game_demo_SOURCE_DIR}/client/ncurses_client.c"
+        )
+
+set(SDL_CLIENT_SOURCE_LIST
+        "${stirling_game_demo_SOURCE_DIR}/util/network_util.c"
         )
 
 set(ADMIN_CLIENT_SOURCE_LIST
-        "${stirling_game_demo_SOURCE_DIR}/include/admin_client.h"
+        "${stirling_game_demo_SOURCE_DIR}/util/network_util.c"
         )
 
 set(SERVER_MAIN_SOURCE
         "${stirling_game_demo_SOURCE_DIR}/server/server.c"
         )
 
-set(CLIENT_MAIN_SOURCE
-        "${stirling_game_demo_SOURCE_DIR}/client/client.c"
+set(NCURSES_CLIENT_MAIN_SOURCE
+        "${stirling_game_demo_SOURCE_DIR}/client/ncurses_client.c"
+        )
+
+set(SDL_CLIENT_MAIN_SOURCE
+        "${stirling_game_demo_SOURCE_DIR}/client/sdl_client.c"
         )
 
 set(ADMIN_CLIENT_MAIN_SOURCE

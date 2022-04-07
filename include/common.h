@@ -18,13 +18,13 @@
  *  along with dc_dump.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <bits/stdint-uintn.h>
 #include <netinet/in.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define DEFAULT_TCP_PORT "7521"
 #define DEFAULT_UDP_PORT "4981"
-
+#define DEFAULT_PORT     "7666"
 #define DEFAULT_TCP_PORT_ADMIN_SERVER 8521
 
 #define DEFAULT_HOSTNAME "127.0.0.1"
@@ -104,6 +104,7 @@ typedef struct {
     bullet_node * bulletList;
 } client_info;
 
+static int display(const char *str);
 
 #define EXIT_KEY '0'
 #define MOVE_UP 'w'
