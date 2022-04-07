@@ -1,4 +1,41 @@
+#include <dc_application/command_line.h>
+#include <dc_application/config.h>
+#include <dc_application/defaults.h>
+#include <dc_application/environment.h>
+#include <dc_application/options.h>
+#include <dc_posix/dc_stdlib.h>
+#include <dc_posix/dc_string.h>
+#include <dc_posix/dc_signal.h>
+#include <dc_posix/sys/dc_socket.h>
+#include <dc_posix/dc_unistd.h>
+
+#include <arpa/inet.h>
+#include <errno.h>
+#include <getopt.h>
+#include <ncurses.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <time.h>
+#include <pthread.h>
+#include <unistd.h>
+
+//local imports
+#include "common.h"
+#include "network_util.h"
+#include "types.h"
+#include "default_config.h"
 #include "ncurses_client.h"
+
+
+static volatile sig_atomic_t exit_flag;
+static void quit_handler(int sig_num);
 
 int main(int argc, char *argv[])
 {
@@ -10,32 +47,26 @@ int main(int argc, char *argv[])
   int ret_val;
 
   reporter = error_reporter;
-  tracer = trace_reporter;
   tracer = NULL;
+  //  tracer = trace_reporter;
   dc_error_init(&err, reporter);
   dc_posix_env_init(&env, tracer);
   info = dc_application_info_create(&env, &err, "Game Client");
 
-  struct sigaction sa;
-  sa.sa_handler = &signal_handler;
-  sa.sa_flags = 0;
-  dc_sigaction(&env, &err, SIGINT, &sa, NULL);
-  dc_sigaction(&env, &err, SIGTERM, &sa, NULL);
-
-
   ret_val = dc_application_run(&env, &err, info, create_settings, destroy_settings, run, dc_default_create_lifecycle, dc_default_destroy_lifecycle, NULL, argc, argv);
   dc_application_info_destroy(&env, &info);
   dc_error_reset(&err);
+  endwin();
 
   return ret_val;
 }
 
 static struct dc_application_settings *create_settings(const struct dc_posix_env *env, struct dc_error *err)
 {
-  struct application_settings *settings;
+  struct ncurses_client_application_settings *settings;
 
   DC_TRACE(env);
-  settings = dc_malloc(env, err, sizeof(struct application_settings));
+  settings = dc_malloc(env, err, sizeof(struct ncurses_client_application_settings));
 
   if(settings == NULL)
   {
@@ -43,13 +74,9 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
   }
 
   settings->opts.parent.config_path = dc_setting_path_create(env, err);
-  settings->start_time = dc_setting_string_create(env, err);
   settings->server_ip = dc_setting_string_create(env, err);
   settings->server_udp_port = dc_setting_uint16_create(env, err);
   settings->server_tcp_port = dc_setting_uint16_create(env, err);
-  settings->num_packets = dc_setting_uint16_create(env, err);
-  settings->packet_size = dc_setting_uint16_create(env, err);
-  settings->packet_delay = dc_setting_uint16_create(env, err);
   struct options opts[] = {
       {(struct dc_setting *)settings->opts.parent.config_path,
        dc_options_set_path,
@@ -59,16 +86,6 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
        "CONFIG",
        dc_string_from_string,
        NULL,
-       dc_string_from_config,
-       NULL},
-      {(struct dc_setting *)settings->start_time,
-       dc_options_set_string,
-       "start_time",
-       required_argument,
-       's',
-       "START_TIME",
-       dc_string_from_string,
-       "start_time",
        dc_string_from_config,
        NULL},
       {(struct dc_setting *)settings->server_ip,
@@ -100,38 +117,7 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
        dc_uint16_from_string,
        "server_tcp_port",
        dc_uint16_from_config,
-       dc_uint16_from_string(env, err, DEFAULT_TCP_PORT)},
-      {(struct dc_setting *)settings->num_packets,
-       dc_options_set_uint16,
-       "num_packets",
-       required_argument,
-       'n',
-       "NUM_PACKETS",
-       dc_uint16_from_string,
-       "num_packets",
-       dc_uint16_from_config,
-       dc_uint16_from_string(env, err, "100")},
-      {(struct dc_setting *)settings->packet_size,
-       dc_options_set_uint16,
-       "packet_size",
-       required_argument,
-       's',
-       "PACKET_SIZE",
-       dc_uint16_from_string,
-       "packet_size",
-       dc_uint16_from_config,
-       dc_uint16_from_string(env, err, "100")},
-      {(struct dc_setting *)settings->packet_delay,
-       dc_options_set_uint16,
-       "packet_delay",
-       required_argument,
-       'd',
-       "PACKET_DELAY",
-       dc_uint16_from_string,
-       "packet_delay",
-       dc_uint16_from_config,
-       dc_uint16_from_string(env, err, "1")}
-
+       dc_uint16_from_string(env, err, DEFAULT_TCP_PORT)}
   };
 
   // note the trick here - we use calloc and add 1 to ensure the last line is all 0/NULL
@@ -149,14 +135,15 @@ static int destroy_settings(const struct dc_posix_env *env,
                             __attribute__((unused)) struct dc_error *err,
                             struct dc_application_settings **psettings)
 {
-  struct application_settings *app_settings;
+  struct ncurses_client_application_settings *app_settings;
 
   DC_TRACE(env);
-  app_settings = (struct application_settings *)*psettings;
-  dc_setting_string_destroy(env, &app_settings->start_time);
+  app_settings = (struct ncurses_client_application_settings *)*psettings;
   dc_setting_string_destroy(env, &app_settings->server_ip);
+  dc_setting_uint16_destroy(env, &app_settings->server_tcp_port);
+  dc_setting_uint16_destroy(env, &app_settings->server_udp_port);
   dc_free(env, app_settings->opts.opts, app_settings->opts.opts_count);
-  dc_free(env, *psettings, sizeof(struct application_settings));
+  dc_free(env, *psettings, sizeof(struct ncurses_client_application_settings));
 
   if(env->null_free)
   {
@@ -169,11 +156,11 @@ static int destroy_settings(const struct dc_posix_env *env,
 
 static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_application_settings *settings)
 {
-  struct application_settings *app_settings;
+  struct ncurses_client_application_settings *app_settings;
 
   DC_TRACE(env);
 
-  app_settings = (struct application_settings *)settings;
+  app_settings = (struct ncurses_client_application_settings *)settings;
 
   //TCP
   int tcp_server_socket = connect_to_tcp_server(env, err, dc_setting_string_get(env, app_settings->server_ip), dc_setting_uint16_get(env, app_settings->server_tcp_port), DEFAULT_IP_VERSION);
@@ -218,7 +205,6 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
 
 
 
-  const uint16_t delay = dc_setting_uint16_get(env, app_settings->packet_delay);
   // 100 ticks/s
   const struct timeval tick_rate = {0, 10000};
   struct timeval timeout;
@@ -596,8 +582,8 @@ void move_player(client *client_entity, int direction_x, int direction_y) {
 
 }
 
-void signal_handler(__attribute__ ((unused)) int signnum) {
-  printf("\nexit flag set\n");
+static void quit_handler(int sig_num)
+{
+  display("exit flag set");
   exit_flag = 1;
-  //exit(0);
 }

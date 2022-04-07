@@ -5,53 +5,13 @@
 #ifndef STIRLING_GAME_DEMO_NCURSES_CLIENT_H
 #define STIRLING_GAME_DEMO_NCURSES_CLIENT_H
 
-#include <dc_application/command_line.h>
-#include <dc_application/config.h>
-#include <dc_application/defaults.h>
-#include <dc_application/environment.h>
-#include <dc_application/options.h>
-#include <dc_posix/dc_stdlib.h>
-#include <dc_posix/dc_string.h>
-#include <dc_posix/dc_signal.h>
-#include <dc_posix/sys/dc_socket.h>
-#include <dc_posix/dc_unistd.h>
-
-#include <arpa/inet.h>
-#include <errno.h>
-#include <getopt.h>
-#include <ncurses.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <time.h>
-#include <pthread.h>
-#include <unistd.h>
-
-//local imports
-#include <common.h>
-#include "network_util.h"
-#include "types.h"
-#include "default_config.h"
-
 typedef struct sockaddr_in sockaddr_in;
 
-
-struct application_settings
-{
+struct ncurses_client_application_settings {
   struct dc_opt_settings opts;
-  struct dc_setting_string *start_time;
   struct dc_setting_string *server_ip;
   struct dc_setting_uint16 *server_udp_port;
   struct dc_setting_uint16 *server_tcp_port;
-  struct dc_setting_uint16 *num_packets;
-  struct dc_setting_uint16 *packet_size;
-  struct dc_setting_uint16 *packet_delay;
 };
 
 void signal_handler(__attribute__ ((unused)) int signnum);
