@@ -49,8 +49,10 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
     settings->opts.parent.config_path = dc_setting_path_create(env, err);
     settings->filename = dc_setting_string_create(env, err);
     settings->server_ip = dc_setting_string_create(env, err);
+    settings->server_hostname = dc_setting_string_create(env, err);
     settings->server_udp_port = dc_setting_uint16_create(env, err);
     settings->server_tcp_port = dc_setting_uint16_create(env, err);
+    settings->admin_tcp_port = dc_setting_uint16_create(env, err);
 
     struct options opts[] = {
             {(struct dc_setting *)settings->opts.parent.config_path,
@@ -73,6 +75,16 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
                     "filename",
                     dc_string_from_config,
                     "logfile.txt"},
+            {(struct dc_setting *)settings->server_hostname,
+                    dc_options_set_uint16,
+                    "server_hostname",
+                    required_argument,
+                    'h',
+                    "SERVER_HOSTNAME",
+                    dc_uint16_from_string,
+                    "server_hostname",
+                    dc_uint16_from_config,
+                    DEFAULT_HOSTNAME},
             {(struct dc_setting *)settings->server_ip,
                     dc_options_set_string,
                     "server_ip",
@@ -82,7 +94,7 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
                     dc_string_from_string,
                     "server_ip",
                     dc_string_from_config,
-                    DEFAULT_HOSTNAME},
+                    DEFAULT_IP_VERSION},
             {(struct dc_setting *)settings->server_udp_port,
                     dc_options_set_uint16,
                     "server_udp_port",
@@ -103,6 +115,16 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
                     "server_tcp_port",
                     dc_uint16_from_config,
                     dc_uint16_from_string(env, err, DEFAULT_TCP_PORT)},
+            {(struct dc_setting *)settings->admin_tcp_port,
+                    dc_options_set_uint16,
+                    "admin_tcp_port",
+                    required_argument,
+                    'a',
+                    "ADMIN_TCP_PORT",
+                    dc_uint16_from_string,
+                    "admin_tcp_port",
+                    dc_uint16_from_config,
+                    dc_uint16_from_string(env, err, DEFAULT_TCP_PORT_ADMIN_SERVER)},
     };
 
     // note the trick here - we use calloc and add 1 to ensure the last line is all 0/NULL
@@ -131,6 +153,7 @@ static int destroy_settings(const struct dc_posix_env *env,
     app_settings = (struct application_settings *)*psettings;
     dc_setting_string_destroy(env, &app_settings->filename);
     dc_setting_string_destroy(env, &app_settings->server_ip);
+    dc_setting_string_destroy(env, &app_settings->server_hostname);
     dc_free(env, app_settings->opts.opts, app_settings->opts.opts_count);
     dc_free(env, *psettings, sizeof(struct application_settings));
 
@@ -164,7 +187,7 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     }
 
     //TCP ADMIN SERVER
-    adminServerInfo->admin_server_socket = create_tcp_server(env, err, dc_setting_string_get(env, app_settings->server_ip), DEFAULT_TCP_PORT_ADMIN_SERVER, DEFAULT_IP_VERSION);
+    adminServerInfo->admin_server_socket = create_tcp_server(env, err, dc_setting_string_get(env, app_settings->server_hostname), dc_setting_uint16_get(env, app_settings->admin_tcp_port), dc_setting_string_get(env, app_settings->server_ip));
     if (dc_error_has_error(err) || adminServerInfo->admin_server_socket <= 0) {
         printf("could not create TCP server for admin\n");
         exit(1);
@@ -179,14 +202,14 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
 
     //TCP server
     int tcp_server_sd;
-    tcp_server_sd = create_tcp_server(env, err, dc_setting_string_get(env, app_settings->server_ip), dc_setting_uint16_get(env, app_settings->server_tcp_port), DEFAULT_IP_VERSION);
+    tcp_server_sd = create_tcp_server(env, err, dc_setting_string_get(env, app_settings->server_hostname), dc_setting_uint16_get(env, app_settings->server_tcp_port), dc_setting_string_get(env, app_settings->server_ip));
     if (dc_error_has_error(err) || tcp_server_sd <= 0) {
         printf("could not create TCP server for admin\n");
         exit(1);
     }
 
     // Create UDP socket:
-    int udp_server_sd = create_udp_server(env, err, dc_setting_string_get(env, app_settings->server_ip), dc_setting_uint16_get(env, app_settings->server_udp_port));
+    int udp_server_sd = create_udp_server(env, err, dc_setting_string_get(env, app_settings->server_hostname), dc_setting_uint16_get(env, app_settings->server_udp_port), dc_setting_string_get(env, app_settings->server_ip));
 
 
     fd_set readfds;
@@ -561,31 +584,7 @@ static connection_node * get_active_clients(server_info *serverInfo, uint16_t *n
     return head;
 }
 
-static int create_udp_server(const struct dc_posix_env *env, struct dc_error *err, const char *hostname, in_port_t port) {
-    int udp_server_sd;
-    struct sockaddr_in udp_server_addr;
-    udp_server_sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
-    if(udp_server_sd < 0){
-        printf("Error while creating socket\n");
-        return -1;
-    }
-    //printf("Socket created successfully\n");
-
-    // Set port and IP:
-    udp_server_addr.sin_family = AF_INET;
-    udp_server_addr.sin_port = htons(port);
-    udp_server_addr.sin_addr.s_addr = inet_addr(hostname);
-
-    // Bind to the set port and IP:
-    if(bind(udp_server_sd, (struct sockaddr*)&udp_server_addr, sizeof(udp_server_addr)) < 0){
-        printf("Couldn't bind to the port\n");
-        return -1;
-    }
-    //printf("Done with binding\n");
-    printf("Listening for incoming udp messages on port %d\n", port);
-    return udp_server_sd;
-}
 
 static void acceptTCPConnection(const struct dc_posix_env *env, struct dc_error *err, server_info *serverInfo, int tcp_server_sd) {
     //accept new tcp connectionasd
