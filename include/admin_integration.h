@@ -42,7 +42,7 @@ typedef struct {
     uint8_t command;
     uint16_t target_client_id;
     uint16_t message_length;
-    uint8_t * message;
+    char * message;
 } admin_client_packet;
 
 enum ADMIN_COMMANDS {
