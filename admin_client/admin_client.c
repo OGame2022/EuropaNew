@@ -1,10 +1,4 @@
-//
-// Created by drep on 2022-04-01.
-//
-
 #include "admin_client.h"
-
-
 #include "client.h"
 
 int main(int argc, char *argv[])
@@ -78,27 +72,17 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
                     "start_time",
                     dc_string_from_config,
                     NULL},
-            {(struct dc_setting *)settings->server_ip,
+            {(struct dc_setting *)settings->hostname,
                     dc_options_set_string,
-                    "server_ip",
+                    "host",
                     required_argument,
-                    'i',
-                    "SERVER_IP",
+                    'h',
+                    "HOST",
                     dc_string_from_string,
-                    "server_ip",
+                    "host",
                     dc_string_from_config,
                     DEFAULT_HOSTNAME},
-            {(struct dc_setting *)settings->server_udp_port,
-                    dc_options_set_uint16,
-                    "server_udp_port",
-                    required_argument,
-                    'u',
-                    "SERVER_UDP_PORT",
-                    dc_uint16_from_string,
-                    "server_udp_port",
-                    dc_uint16_from_config,
-                    dc_uint16_from_string(env, err, DEFAULT_UDP_PORT)},
-            {(struct dc_setting *)settings->server_tcp_port,
+            {(struct dc_setting *)settings->port,
                     dc_options_set_uint16,
                     "server_tcp_port",
                     required_argument,
@@ -156,7 +140,7 @@ static int destroy_settings(const struct dc_posix_env *env,
                             __attribute__((unused)) struct dc_error *err,
                             struct dc_application_settings **psettings)
 {
-    struct application_settings *app_settings;
+    struct admin_application_settings *app_settings;
 
     DC_TRACE(env);
     app_settings = (struct application_settings *)*psettings;
@@ -173,24 +157,50 @@ static int destroy_settings(const struct dc_posix_env *env,
     return 0;
 }
 
+uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, char buffer[MAX_BUFFER_SIZE]) {
+    uint8_t command;
+
+    if (dc_strcmp(env, buffer, "/stop") == 0) {
+        command = STOP;
+    } else if (dc_strcmp(env, buffer, "/users") == 0) {
+        command = USERS;
+    } else if (dc_strcmp(env, buffer, "/kick") == 0) {
+        command = KICK;
+    } else if (dc_strcmp(env, buffer, "/warn") == 0) {
+        command = WARN;
+    } else if (dc_strcmp(env, buffer, "/notice") == 0) {
+        command = NOTICE;
+    } else {
+        command = NOT_RECOGNIZED;
+    }
+
+    return command;
+}
+
 static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_application_settings *settings)
 {
-    struct application_settings *app_settings;
+    struct admin_application_settings *app_settings;
+    const char *hostname;
+    uint16_t port;
+    char buffer[MAX_BUFFER_SIZE];
+    uint8_t command;
 
     DC_TRACE(env);
 
-    app_settings = (struct application_settings *)settings;
+    app_settings = (struct admin_application_settings *)settings;
+    hostname = dc_setting_string_get(env, app_settings->hostname);
+    port = dc_setting_uint16_get(env, app_settings->port);
 
     //TCP
-    int tcp_server_socket = connect_to_tcp_server(env, err, dc_setting_string_get(env, app_settings->server_ip), dc_setting_uint16_get(env, app_settings->server_tcp_port), DEFAULT_IP_VERSION);
+    int tcp_server_socket = connect_to_tcp_server(env, err, hostname, port, DEFAULT_IP_VERSION);
     if (dc_error_has_error(err) || tcp_server_socket <= 0) {
         printf("could not connect to TCP socket\n");
         exit(1);
     }
 
-
     // Clean buffers:
-    char server_message[2000], client_message[2000];
+    char server_message[2000];
+    char client_message[2000];
     memset(server_message, '\0', sizeof(server_message));
     memset(client_message, '\0', sizeof(client_message));
     bool exitFlag = false;
@@ -204,41 +214,29 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
 
     fd_set readfds;
     while (!exit_flag) {
-
-
-
         FD_ZERO(&readfds);
-        FD_SET(tcp_server_socket, &readfds);
         FD_SET(STDIN_FILENO, &readfds);
+        FD_SET(tcp_server_socket, &readfds);
 
         int maxfd = tcp_server_socket;
 
-        //printf("select\n");
-        // the big select statement
         if(select(maxfd + 1, &readfds, NULL, NULL, NULL) > 0){
-
-//            if(FD_ISSET(STDIN_FILENO, &readfds)) {
-//                exitFlag = true;
-//            }
-
-            // check for udp messages
+            // check for STDIN Messages (commands)
             if(FD_ISSET(STDIN_FILENO, &readfds)) {
+                dc_read(env, err, STDIN_FILENO, buffer, sizeof(buffer));
+                command = parseAdminCommand(env, err, buffer);
+                if (command != NOT_RECOGNIZED) {
+                    // Do something with it
+                }
             }
 
             // check for new client connections
-            if (FD_ISSET(tcp_server_socket, &readfds))
-            {
+            if (FD_ISSET(tcp_server_socket, &readfds)) {
 
             }
 
-        } else {
-            //printf("select timed out\n");
         }
     }
-
-
-
-
     close(tcp_server_socket);
 
     return EXIT_SUCCESS;

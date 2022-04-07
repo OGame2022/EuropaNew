@@ -1,7 +1,3 @@
-//
-// Created by drep on 2022-04-01.
-//
-
 #include "admin_integration.h"
 
 
@@ -52,8 +48,8 @@ void admin_receiveTcpPacket(const struct dc_posix_env *env, struct dc_error *err
             printf("stop command\n");
             exit(1);
             break;
-        case COUNT:
-            printf("count command\n");
+        case USERS:
+            printf("user list command\n");
             break;
         case KICK:
             printf("kick command\n");
