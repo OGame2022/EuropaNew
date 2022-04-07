@@ -11,7 +11,8 @@ ENDIF ()
 
 # Make an executable
 add_executable(server ${COMMON_SOURCE_LIST}  ${SERVER_SOURCE_LIST} ${SERVER_MAIN_SOURCE} ${HEADER_LIST})
-add_executable(client ${COMMON_SOURCE_LIST}  ${CLIENT_SOURCE_LIST} ${CLIENT_MAIN_SOURCE} ${HEADER_LIST})
+add_executable(ncurses_client ${COMMON_SOURCE_LIST}  ${NCURSES_CLIENT_SOURCE_LIST} ${NCURSES_CLIENT_MAIN_SOURCE} ${HEADER_LIST})
+add_executable(sdl_client ${COMMON_SOURCE_LIST}  ${SDL_CLIENT_SOURCE_LIST} ${SDL_CLIENT_MAIN_SOURCE} ${HEADER_LIST})
 add_executable(admin_client ${COMMON_SOURCE_LIST}  ${ADMIN_CLIENT_SOURCE_LIST} ${ADMIN_CLIENT_MAIN_SOURCE} ${HEADER_LIST})
 
 # We need this directory, and users of our library will need it too
@@ -21,11 +22,17 @@ target_include_directories(server PRIVATE /usr/local/include)
 target_link_directories(server PRIVATE /usr/lib)
 target_link_directories(server PRIVATE /usr/local/lib)
 
-target_include_directories(client PRIVATE ../include)
-target_include_directories(client PRIVATE /usr/include)
-target_include_directories(client PRIVATE /usr/local/include)
-target_link_directories(client PRIVATE /usr/lib)
-target_link_directories(client PRIVATE /usr/local/lib)
+target_include_directories(ncurses_client PRIVATE ../include)
+target_include_directories(ncurses_client PRIVATE /usr/include)
+target_include_directories(ncurses_client PRIVATE /usr/local/include)
+target_link_directories(ncurses_client PRIVATE /usr/lib)
+target_link_directories(ncurses_client PRIVATE /usr/local/lib)
+
+target_include_directories(sdl_client PRIVATE ../include)
+target_include_directories(sdl_client PRIVATE /usr/include)
+target_include_directories(sdl_client PRIVATE /usr/local/include)
+target_link_directories(sdl_client PRIVATE /usr/lib)
+target_link_directories(sdl_client PRIVATE /usr/local/lib)
 
 target_include_directories(admin_client PRIVATE ../include)
 target_include_directories(admin_client PRIVATE /usr/include)
@@ -41,12 +48,19 @@ target_compile_options(server PRIVATE -fstack-protector-all -ftrapv)
 target_compile_options(server PRIVATE -Wpedantic -Wall -Wextra)
 target_compile_options(server PRIVATE -Wdouble-promotion -Wformat-nonliteral -Wformat-security -Wformat-y2k -Wnull-dereference -Winit-self -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wunused-local-typedefs -Wstrict-overflow=5 -Wmissing-noreturn -Walloca -Wfloat-equal -Wdeclaration-after-statement -Wshadow -Wpointer-arith -Wabsolute-value -Wundef -Wexpansion-to-defined -Wunused-macros -Wno-endif-labels -Wbad-function-cast -Wcast-qual -Wwrite-strings -Wconversion -Wdangling-else -Wdate-time -Wempty-body -Wsign-conversion -Wfloat-conversion -Waggregate-return -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes -Wmissing-declarations -Wpacked -Wredundant-decls -Wnested-externs -Winline -Winvalid-pch -Wlong-long -Wvariadic-macros -Wdisabled-optimization -Wstack-protector -Woverlength-strings)
 
-target_compile_features(client PUBLIC c_std_11)
-target_compile_options(client PRIVATE -g)
-target_compile_options(client PRIVATE -fstack-protector-all -ftrapv)
-target_compile_options(client PRIVATE -Wpedantic -Wall -Wextra)
-target_compile_options(client PRIVATE -Wdouble-promotion -Wformat-nonliteral -Wformat-security -Wformat-y2k -Wnull-dereference -Winit-self -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wunused-local-typedefs -Wstrict-overflow=5 -Wmissing-noreturn -Walloca -Wfloat-equal -Wdeclaration-after-statement -Wshadow -Wpointer-arith -Wabsolute-value -Wundef -Wexpansion-to-defined -Wunused-macros -Wno-endif-labels -Wbad-function-cast -Wcast-qual -Wwrite-strings -Wconversion -Wdangling-else -Wdate-time -Wempty-body -Wsign-conversion -Wfloat-conversion -Waggregate-return -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes -Wmissing-declarations -Wpacked -Wredundant-decls -Wnested-externs -Winline -Winvalid-pch -Wlong-long -Wvariadic-macros -Wdisabled-optimization -Wstack-protector -Woverlength-strings)
-target_compile_options(client PRIVATE -pthread)
+target_compile_features(ncurses_client PUBLIC c_std_11)
+target_compile_options(ncurses_client PRIVATE -g)
+target_compile_options(ncurses_client PRIVATE -fstack-protector-all -ftrapv)
+target_compile_options(ncurses_client PRIVATE -Wpedantic -Wall -Wextra)
+target_compile_options(ncurses_client PRIVATE -Wdouble-promotion -Wformat-nonliteral -Wformat-security -Wformat-y2k -Wnull-dereference -Winit-self -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wunused-local-typedefs -Wstrict-overflow=5 -Wmissing-noreturn -Walloca -Wfloat-equal -Wdeclaration-after-statement -Wshadow -Wpointer-arith -Wabsolute-value -Wundef -Wexpansion-to-defined -Wunused-macros -Wno-endif-labels -Wbad-function-cast -Wcast-qual -Wwrite-strings -Wconversion -Wdangling-else -Wdate-time -Wempty-body -Wsign-conversion -Wfloat-conversion -Waggregate-return -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes -Wmissing-declarations -Wpacked -Wredundant-decls -Wnested-externs -Winline -Winvalid-pch -Wlong-long -Wvariadic-macros -Wdisabled-optimization -Wstack-protector -Woverlength-strings)
+target_compile_options(ncurses_client PRIVATE -pthread)
+
+target_compile_features(sdl_client PUBLIC c_std_11)
+target_compile_options(sdl_client PRIVATE -g)
+target_compile_options(sdl_client PRIVATE -fstack-protector-all -ftrapv)
+target_compile_options(sdl_client PRIVATE -Wpedantic -Wall -Wextra)
+target_compile_options(sdl_client PRIVATE -Wdouble-promotion -Wformat-nonliteral -Wformat-security -Wformat-y2k -Wnull-dereference -Winit-self -Wmissing-include-dirs -Wswitch-default -Wswitch-enum -Wunused-local-typedefs -Wstrict-overflow=5 -Wmissing-noreturn -Walloca -Wfloat-equal -Wdeclaration-after-statement -Wshadow -Wpointer-arith -Wabsolute-value -Wundef -Wexpansion-to-defined -Wunused-macros -Wno-endif-labels -Wbad-function-cast -Wcast-qual -Wwrite-strings -Wconversion -Wdangling-else -Wdate-time -Wempty-body -Wsign-conversion -Wfloat-conversion -Waggregate-return -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes -Wmissing-declarations -Wpacked -Wredundant-decls -Wnested-externs -Winline -Winvalid-pch -Wlong-long -Wvariadic-macros -Wdisabled-optimization -Wstack-protector -Woverlength-strings)
+target_compile_options(sdl_client PRIVATE -pthread)
 
 target_compile_features(admin_client PUBLIC c_std_11)
 target_compile_options(admin_client PRIVATE -g)
@@ -72,14 +86,22 @@ target_link_libraries(server PRIVATE ${LIBDC_UTIL})
 target_link_libraries(server PRIVATE ${LIBDC_FSM})
 target_link_libraries(server PRIVATE ${LIBDC_APPLICATION})
 
-target_link_libraries(client PRIVATE ${LIBM})
-target_link_libraries(client PRIVATE ${LIBDC_ERROR})
-target_link_libraries(client PRIVATE ${LIBDC_POSIX})
-target_link_libraries(client PRIVATE ${LIBDC_UTIL})
-target_link_libraries(client PRIVATE ${LIBDC_FSM})
-target_link_libraries(client PRIVATE ${LIBDC_APPLICATION})
-target_link_libraries(client PRIVATE ${CURSES_LIBRARIES})
-target_link_libraries(client PRIVATE Threads::Threads)
+target_link_libraries(ncurses_client PRIVATE ${LIBM})
+target_link_libraries(ncurses_client PRIVATE ${LIBDC_ERROR})
+target_link_libraries(ncurses_client PRIVATE ${LIBDC_POSIX})
+target_link_libraries(ncurses_client PRIVATE ${LIBDC_UTIL})
+target_link_libraries(ncurses_client PRIVATE ${LIBDC_FSM})
+target_link_libraries(ncurses_client PRIVATE ${LIBDC_APPLICATION})
+target_link_libraries(ncurses_client PRIVATE ${CURSES_LIBRARIES})
+target_link_libraries(ncurses_client PRIVATE Threads::Threads)
+
+target_link_libraries(sdl_client PRIVATE ${LIBM})
+target_link_libraries(sdl_client PRIVATE ${LIBDC_ERROR})
+target_link_libraries(sdl_client PRIVATE ${LIBDC_POSIX})
+target_link_libraries(sdl_client PRIVATE ${LIBDC_UTIL})
+target_link_libraries(sdl_client PRIVATE ${LIBDC_FSM})
+target_link_libraries(sdl_client PRIVATE ${LIBDC_APPLICATION})
+target_link_libraries(sdl_client PRIVATE Threads::Threads)
 
 target_link_libraries(admin_client PRIVATE ${LIBM})
 target_link_libraries(admin_client PRIVATE ${LIBDC_ERROR})
@@ -91,11 +113,13 @@ target_link_libraries(admin_client PRIVATE ${CURSES_LIBRARIES})
 target_link_libraries(admin_client PRIVATE Threads::Threads)
 
 set_target_properties(server PROPERTIES OUTPUT_NAME "server")
-set_target_properties(client PROPERTIES OUTPUT_NAME "client")
+set_target_properties(ncurses_client PROPERTIES OUTPUT_NAME "ncurses_client")
+set_target_properties(sdl_client PROPERTIES OUTPUT_NAME "sdl_client")
 set_target_properties(admin_client PROPERTIES OUTPUT_NAME "admin_client")
 
 install(TARGETS server DESTINATION bin)
-install(TARGETS client DESTINATION bin)
+install(TARGETS ncurses_client DESTINATION bin)
+install(TARGETS sdl_client DESTINATION bin)
 install(TARGETS admin_client DESTINATION bin)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
@@ -120,9 +144,11 @@ add_custom_target(
         ${HEADER_LIST}
         ${COMMON_SOURCE_LIST}
         ${SERVER_SOURCE_LIST}
-        ${CLIENT_SOURCE_LIST}
         ${SERVER_MAIN_SOURCE}
-        ${CLIENT_MAIN_SOURCE}
+        ${NCURSES_CLIENT_SOURCE_LIST}
+        ${NCURSES_CLIENT_MAIN_SOURCE}
+        ${SDL_CLIENT_SOURCE_LIST}
+        ${SDL_CLIENT_MAIN_SOURCE}
         ${ADMIN_CLIENT_SOURCE_LIST}
         ${ADMIN_CLIENT_MAIN_SOURCE}
 )
