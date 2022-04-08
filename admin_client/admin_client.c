@@ -127,7 +127,7 @@ static int destroy_settings(const struct dc_posix_env *env,
 
 
 
-uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, char buffer[MAX_BUFFER_SIZE]) {
+uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, char buffer[MAX_BUFFER_SIZE], volatile sig_atomic_t * exitFlag) {
     uint8_t enumCommand;
     char *charCommand;
     char *commandString;
@@ -148,6 +148,8 @@ uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, 
         enumCommand = WARN;
     } else if (dc_strcmp(env, charCommand, "/notice") == 0) {
         enumCommand = NOTICE;
+    } else if (dc_strcmp(env, charCommand, "/quit") == 0) {
+        *exitFlag = true;
     } else {
         enumCommand = NOT_RECOGNIZED;
     }
@@ -206,7 +208,7 @@ admin_client * receiveAdminPacket(const struct dc_posix_env *env, struct dc_erro
     admin_client_readPacketFromSocket(env, err, &adminClientPacket, admin_socket);
 
     if (adminClientPacket.command == USERS) {
-        printf("User List\n");
+        printf("%s\n", adminClientPacket.message);
     }
 }
 
@@ -249,7 +251,7 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
         if(select(maxfd + 1, &readfds, NULL, NULL, NULL) > 0){
             if(FD_ISSET(STDIN_FILENO, &readfds)) {
                 dc_read(env, err, STDIN_FILENO, buffer, sizeof(buffer));
-                command = parseAdminCommand(env, err, buffer);
+                command = parseAdminCommand(env, err, buffer, &exit_flag);
                 if (command == NOT_RECOGNIZED) {
                     printf("Command not recognized\n");
                 } else {
