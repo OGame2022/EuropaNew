@@ -38,6 +38,7 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
     DC_TRACE(env);
     settings = dc_malloc(env, err, sizeof(struct admin_application_settings));
 
+
     if(settings == NULL)
     {
         return NULL;
