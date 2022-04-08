@@ -81,6 +81,25 @@ void admin_acceptTCPConnection(const struct dc_posix_env *env, struct dc_error *
     }
 }
 
+char * write_user_list_to_string(const struct dc_posix_env *env, struct dc_error *err, server_info *serverInfo) {
+    char buffer[MAX_BUFFER_SIZE] = {0};
+    char *userList;
+    char clientID[MAX_BUFFER_SIZE] = {0};
+    char clientAddress[MAX_BUFFER_SIZE] = {0};
+
+    for (size_t i = 0; serverInfo->connections[i]; i++) {
+        sprintf(clientID, "%hu", serverInfo->connections[i]->client_id);
+        dc_strcat(env, buffer, clientID);
+        dc_strcat(env, buffer, " ");
+        inet_ntop(AF_INET, serverInfo->connections[i]->udp_address, clientAddress, INET_ADDRSTRLEN);
+        dc_strcat(env, buffer, clientAddress);
+        dc_strcat(env, buffer, " ");
+    }
+    userList = dc_strdup(env, err, buffer);
+
+    return userList;
+}
+
 void admin_receiveTcpPacket(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo,
                          server_info *serverInfo, uint16_t admin_id, volatile sig_atomic_t * exit_flag) {
     /**
@@ -116,7 +135,7 @@ void admin_receiveTcpPacket(const struct dc_posix_env *env, struct dc_error *err
             *exit_flag = true;
             break;
         case USERS:
-            message = dc_strdup(env, err, "User List is returned in this message.");
+            message = write_user_list_to_string(env, err, serverInfo);
             send_admin_client_message(env, err, adminClientPacket.command, message, admin_socket);
             printf("user list command\n");
             break;

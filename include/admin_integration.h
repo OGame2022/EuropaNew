@@ -36,6 +36,7 @@
 #define ADMIN_HEADER_SIZE 6
 #define MAX_ADMIN_CLIENTS 15
 #define ADMIN_PROTOCOL_VERSION 1
+#define MAX_BUFFER_SIZE 1024
 
 typedef struct {
     uint8_t version;
@@ -66,7 +67,7 @@ typedef struct {
 
 void admin_readPacketFromSocket(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo,
                            uint16_t admin_id, admin_client_packet *adminClientPacket, int admin_socket);
-
+char * write_user_list_to_string(const struct dc_posix_env *env, struct dc_error *err, server_info *serverInfo);
 void admin_receiveTcpPacket(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo, server_info *serverInfo, uint16_t admin_id, volatile sig_atomic_t * exit_flag);
 
 void admin_acceptTCPConnection(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo);

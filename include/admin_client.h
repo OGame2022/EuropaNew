@@ -16,6 +16,7 @@ struct admin_application_settings
 
 uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, char buffer[MAX_BUFFER_SIZE], volatile sig_atomic_t * exit_flag);
 void admin_client_readPacketFromSocket(const struct dc_posix_env *env, struct dc_error *err, admin_client_packet *adminClientPacket, int admin_socket);
+void write_to_log(const struct dc_posix_env *env, struct dc_error *err, char *message);
 admin_client * receiveAdminPacket(const struct dc_posix_env *env, struct dc_error *err, int admin_socket);
 
 #endif //STIRLING_GAME_DEMO_ADMIN_CLIENT_H

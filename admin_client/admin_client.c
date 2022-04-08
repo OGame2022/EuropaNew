@@ -140,6 +140,7 @@ uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, 
 
     if (dc_strcmp(env, charCommand, "/stop") == 0) {
         enumCommand = STOP;
+        *exitFlag = true;
     } else if (dc_strcmp(env, charCommand, "/users") == 0) {
         enumCommand = USERS;
     } else if (dc_strcmp(env, charCommand, "/kick") == 0) {
@@ -202,13 +203,58 @@ void admin_client_readPacketFromSocket(const struct dc_posix_env *env, struct dc
     }
 }
 
+void write_to_log(const struct dc_posix_env *env, struct dc_error *err, char *message) {
+    char *messageCopy;
+    char *endPointer;
+    int logFD;
+    char *buffer;
+    char timeBuffer[MAX_BUFFER_SIZE];
+    time_t rawtime;
+    struct tm * timeinfo;
+    size_t wordCounter = 0;
+
+    logFD = dc_open(env, err, "../../logs/admin_client_log.txt", O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);;
+
+    time(&rawtime);
+    timeinfo = localtime (&rawtime);
+    sprintf(timeBuffer, "Log Entry Date: %s", asctime (timeinfo));
+    dc_write(env, err, logFD,  timeBuffer, dc_strlen(env, timeBuffer));
+
+    dc_write(env, err, logFD,  "Client List <ID> <IP>:\n", dc_strlen(env, "Client List <ID> <IP>:\n"));
+
+    messageCopy = dc_strdup(env, err, message);
+
+    buffer = dc_strtok_r(env, messageCopy, " ", &endPointer);
+    while (buffer) {
+        if (wordCounter > 0) {
+            buffer = dc_strtok_r(env, endPointer, " ", &endPointer);
+            wordCounter++;
+        }
+        if (buffer) {
+            dc_write(env, err, logFD,  buffer, dc_strlen(env, buffer));
+            dc_write(env, err, logFD,  " ", 1);
+            buffer = dc_strtok_r(env, endPointer, " ", &endPointer);
+            wordCounter++;
+            dc_write(env, err, logFD,  buffer, dc_strlen(env, buffer));
+            dc_write(env, err, logFD,  " ", 1);
+            dc_write(env, err, logFD,  "\n", 1);
+        }
+    }
+    dc_close(env, err, logFD);
+}
+
 admin_client * receiveAdminPacket(const struct dc_posix_env *env, struct dc_error *err, int admin_socket) {
     admin_client_packet adminClientPacket = {0};
 
     admin_client_readPacketFromSocket(env, err, &adminClientPacket, admin_socket);
 
     if (adminClientPacket.command == USERS) {
-        printf("%s\n", adminClientPacket.message);
+        if (adminClientPacket.message) {
+            write_to_log(env, err, adminClientPacket.message);
+            printf("Client List written to admin_client_log.txt\n");
+        } else {
+            printf("No Game Clients Connected.\n");
+        }
     }
 }
 
