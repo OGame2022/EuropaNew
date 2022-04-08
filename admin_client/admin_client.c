@@ -213,7 +213,7 @@ void write_to_log(const struct dc_posix_env *env, struct dc_error *err, char *me
     struct tm * timeinfo;
     size_t wordCounter = 0;
 
-    logFD = dc_open(env, err, "../../logs/admin_client_log.txt", O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);;
+    logFD = dc_open(env, err, "../../adminLogs/admin_client_log.txt", O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);;
 
     time(&rawtime);
     timeinfo = localtime (&rawtime);
