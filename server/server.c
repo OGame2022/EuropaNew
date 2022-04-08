@@ -51,6 +51,7 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
     settings->server_ip = dc_setting_string_create(env, err);
     settings->server_udp_port = dc_setting_uint16_create(env, err);
     settings->server_tcp_port = dc_setting_uint16_create(env, err);
+    settings->server_admin_tcp_port = dc_setting_uint16_create(env, err);
 
     struct options opts[] = {
             {(struct dc_setting *)settings->opts.parent.config_path,
@@ -103,6 +104,16 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
                     "server_tcp_port",
                     dc_uint16_from_config,
                     dc_uint16_from_string(env, err, DEFAULT_TCP_PORT)},
+            {(struct dc_setting *)settings->server_admin_tcp_port,
+                    dc_options_set_uint16,
+                    "server_admin_tcp_port",
+                    required_argument,
+                    'a',
+                    "SERVER_ADMIN_TCP_PORT",
+                    dc_uint16_from_string,
+                    "server_admin_tcp_port",
+                    dc_uint16_from_config,
+                    dc_uint16_from_string(env, err, DEFAULT_TCP_PORT_ADMIN_SERVER)},
     };
 
     // note the trick here - we use calloc and add 1 to ensure the last line is all 0/NULL
@@ -131,6 +142,7 @@ static int destroy_settings(const struct dc_posix_env *env,
     app_settings = (struct application_settings *)*psettings;
     dc_setting_string_destroy(env, &app_settings->filename);
     dc_setting_string_destroy(env, &app_settings->server_ip);
+    dc_setting_uint16_destroy(env, &app_settings->server_admin_tcp_port);
     dc_free(env, app_settings->opts.opts, app_settings->opts.opts_count);
     dc_free(env, *psettings, sizeof(struct application_settings));
 
@@ -147,7 +159,9 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     DC_TRACE(env);
     struct application_settings *app_settings;
     app_settings = (struct application_settings *)settings;
+    uint16_t adminPort;
 
+    adminPort = dc_setting_uint16_get(env, app_settings->server_admin_tcp_port);
 
     //open file
     const char *filename;
@@ -164,7 +178,7 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     }
 
     //TCP ADMIN SERVER
-    adminServerInfo->admin_server_socket = create_tcp_server(env, err, dc_setting_string_get(env, app_settings->server_ip), DEFAULT_TCP_PORT_ADMIN_SERVER, DEFAULT_IP_VERSION);
+    adminServerInfo->admin_server_socket = create_tcp_server(env, err, dc_setting_string_get(env, app_settings->server_ip), adminPort, DEFAULT_IP_VERSION);
     if (dc_error_has_error(err) || adminServerInfo->admin_server_socket <= 0) {
         printf("could not create TCP server for admin\n");
         exit(1);
