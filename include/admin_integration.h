@@ -46,7 +46,7 @@ typedef struct {
 } admin_client_packet;
 
 enum ADMIN_COMMANDS {
-    STOP,
+    STOP = 1,
     USERS,
     KICK,
     WARN,

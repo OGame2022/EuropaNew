@@ -47,7 +47,6 @@ void admin_receiveTcpPacket(const struct dc_posix_env *env, struct dc_error *err
         case STOP:
             printf("stop command\n");
             *exit_flag = true;
-            //dc_exit(env,1);
             break;
         case USERS:
             printf("user list command\n");

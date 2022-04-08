@@ -125,24 +125,34 @@ static int destroy_settings(const struct dc_posix_env *env,
     return 0;
 }
 
-uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, char buffer[MAX_BUFFER_SIZE]) {
-    uint8_t command;
 
-    if (dc_strcmp(env, buffer, "/stop\n") == 0) {
-        command = STOP;
-    } else if (dc_strcmp(env, buffer, "/users") == 0) {
-        command = USERS;
-    } else if (dc_strcmp(env, buffer, "/kick") == 0) {
-        command = KICK;
-    } else if (dc_strcmp(env, buffer, "/warn") == 0) {
-        command = WARN;
-    } else if (dc_strcmp(env, buffer, "/notice") == 0) {
-        command = NOTICE;
+
+uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, char buffer[MAX_BUFFER_SIZE]) {
+    uint8_t enumCommand;
+    char *charCommand;
+    char *commandString;
+    char *endPointer;
+
+    commandString = dc_strdup(env, err, buffer);
+
+    dc_strtok_r(env, commandString, "\n", &endPointer);
+    charCommand = dc_strdup(env, err, dc_strtok_r(env, commandString, " ", &endPointer));
+
+    if (dc_strcmp(env, charCommand, "/stop") == 0) {
+        enumCommand = STOP;
+    } else if (dc_strcmp(env, charCommand, "/users") == 0) {
+        enumCommand = USERS;
+    } else if (dc_strcmp(env, charCommand, "/kick") == 0) {
+        enumCommand = KICK;
+    } else if (dc_strcmp(env, charCommand, "/warn") == 0) {
+        enumCommand = WARN;
+    } else if (dc_strcmp(env, charCommand, "/notice") == 0) {
+        enumCommand = NOTICE;
     } else {
-        command = NOT_RECOGNIZED;
+        enumCommand = NOT_RECOGNIZED;
     }
 
-    return command;
+    return enumCommand;
 }
 
 admin_client_packet * create_client_packet(const struct dc_posix_env *env, struct dc_error *err, enum ADMIN_COMMANDS command, char *message) {
@@ -170,16 +180,16 @@ admin_client_packet * create_client_packet(const struct dc_posix_env *env, struc
 
 int serialize_client_packet(const struct dc_posix_env *env, struct dc_error *err, admin_client_packet * clientPacket, uint8_t **output_buffer, size_t *size)
 {
-    size_t header_size = 4;
+    // Change this to 8 if header includes message
+    size_t header_size = 6;
     uint8_t client_header[header_size];
-//    uint8_t client_header[8];
 
     client_header[0] = clientPacket->version;
     client_header[1] = clientPacket->command;
     client_header[2] = clientPacket->target_client_id & 0xFF;
     client_header[3] = clientPacket->target_client_id >> 8;
-//    client_header[4] = clientPacket->message_length & 0xFF;
-//    client_header[5] = clientPacket->message_length >> 8;
+    client_header[4] = clientPacket->message_length & 0xFF;
+    client_header[5] = clientPacket->message_length >> 8;
 //    client_header[6] = clientPacket->message & 0xFF;
 //    client_header[7] = clientPacket->message >> 8;
 
@@ -195,8 +205,6 @@ int serialize_client_packet(const struct dc_posix_env *env, struct dc_error *err
 
     return 0;
 }
-
-
 
 void send_admin_client_message(const struct dc_posix_env *env, struct dc_error *err, enum ADMIN_COMMANDS command, char *message, int tcp_server_socket) {
     admin_client_packet *clientPacket;
@@ -279,8 +287,6 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     return EXIT_SUCCESS;
 }
 
-
-
 static void error_reporter(const struct dc_error *err)
 {
     fprintf(stderr, "ERROR: %s : %s : @ %zu : %d\n", err->file_name, err->function_name, err->line_number, 0);
@@ -294,8 +300,6 @@ static void trace_reporter(__attribute__((unused)) const struct dc_posix_env *en
 {
     fprintf(stdout, "TRACE: %s : %s : @ %zu\n", file_name, function_name, line_number);
 }
-
-
 
 void signal_handler(__attribute__ ((unused)) int signnum) {
     printf("\nexit flag set\n");
