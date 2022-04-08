@@ -38,6 +38,7 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
     DC_TRACE(env);
     settings = dc_malloc(env, err, sizeof(struct admin_application_settings));
 
+
     if(settings == NULL)
     {
         return NULL;
@@ -88,7 +89,7 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
                     dc_uint16_from_string,
                     "server_tcp_port",
                     dc_uint16_from_config,
-                    dc_uint16_from_string(env, err, DEFAULT_PORT)},
+                    dc_uint16_from_string(env, err, DEFAULT_TCP_PORT_ADMIN_SERVER)},
                 };
 
     // note the trick here - we use calloc and add 1 to ensure the last line is all 0/NULL
@@ -243,13 +244,6 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     dc_memset(env, server_message, '\0', sizeof(server_message));
     dc_memset(env, client_message, '\0', sizeof(client_message));
     bool exitFlag = false;
-
-    // wait for server to give you an ID
-    ssize_t count = dc_read(env, err, tcp_server_socket, server_message, sizeof(server_message));
-    if (count <= 0) {
-        printf("could not get ID\n");
-        exit(1);
-    }
 
     fd_set readfds;
     while (!exit_flag) {
