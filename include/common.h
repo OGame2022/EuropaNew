@@ -22,11 +22,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define DEFAULT_TCP_PORT "7521"
-#define DEFAULT_UDP_PORT "4981"
-#define DEFAULT_PORT     "7666"
-#define DEFAULT_TCP_PORT_ADMIN_SERVER 8521
-#define DEFAULT_TCP_PORT_ADMIN_SERVER "8521"
+#define DEFAULT_TCP_PORT "7523"
+#define DEFAULT_UDP_PORT "4983"
+#define DEFAULT_PORT     "7667"
+#define DEFAULT_TCP_PORT_ADMIN_SERVER "8523"
 #define DEFAULT_IP_VERSION "IPv4"
 
 #define DEFAULT_HOSTNAME "127.0.0.1"

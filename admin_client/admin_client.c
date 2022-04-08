@@ -86,9 +86,9 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
                     'p',
                     "PORT",
                     dc_uint16_from_string,
-                    "server_tcp_port",
+                    "port",
                     dc_uint16_from_config,
-                    dc_uint16_from_string(env, err, DEFAULT_PORT)},
+                    dc_uint16_from_string(env, err, DEFAULT_TCP_PORT_ADMIN_SERVER)},
                 };
 
     // note the trick here - we use calloc and add 1 to ensure the last line is all 0/NULL
@@ -127,7 +127,7 @@ static int destroy_settings(const struct dc_posix_env *env,
 uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, char buffer[MAX_BUFFER_SIZE]) {
     uint8_t command;
 
-    if (dc_strcmp(env, buffer, "/stop") == 0) {
+    if (dc_strcmp(env, buffer, "/stop\n") == 0) {
         command = STOP;
     } else if (dc_strcmp(env, buffer, "/users") == 0) {
         command = USERS;
@@ -169,7 +169,8 @@ admin_client_packet * create_client_packet(const struct dc_posix_env *env, struc
 
 int serialize_client_packet(const struct dc_posix_env *env, struct dc_error *err, admin_client_packet * clientPacket, uint8_t **output_buffer, size_t *size)
 {
-    uint8_t client_header[4];
+    size_t header_size = 4;
+    uint8_t client_header[header_size];
 //    uint8_t client_header[8];
 
     client_header[0] = clientPacket->version;
@@ -208,7 +209,7 @@ void send_admin_client_message(const struct dc_posix_env *env, struct dc_error *
     dc_write(env, err, tcp_server_socket, output_buffer, packetSize);
     dc_free(env, output_buffer, packetSize);
 
-    if (clientPacket->message) {
+        if (clientPacket->message) {
         dc_free(env, clientPacket->message, dc_strlen(env, clientPacket->message) + 1);
     }
     dc_free(env, clientPacket, sizeof(admin_client_packet));
@@ -244,13 +245,6 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     dc_memset(env, client_message, '\0', sizeof(client_message));
     bool exitFlag = false;
 
-    // wait for server to give you an ID
-    ssize_t count = dc_read(env, err, tcp_server_socket, server_message, sizeof(server_message));
-    if (count <= 0) {
-        printf("could not get ID\n");
-        exit(1);
-    }
-
     fd_set readfds;
     while (!exit_flag) {
         FD_ZERO(&readfds);
@@ -265,7 +259,7 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
                 // To use messages, we will need to use strtok or similar to parse the buffer for additional input.
                 dc_read(env, err, STDIN_FILENO, buffer, sizeof(buffer));
                 command = parseAdminCommand(env, err, buffer);
-                if (command != NOT_RECOGNIZED) {
+                if (command == NOT_RECOGNIZED) {
                     printf("Command not recognized\n");
                 } else {
                     send_admin_client_message(env, err, command, NULL, tcp_server_socket);

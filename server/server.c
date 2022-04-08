@@ -52,7 +52,7 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
     settings->server_hostname = dc_setting_string_create(env, err);
     settings->server_udp_port = dc_setting_uint16_create(env, err);
     settings->server_tcp_port = dc_setting_uint16_create(env, err);
-    settings->admin_tcp_port = dc_setting_uint16_create(env, err);
+    settings->server_admin_tcp_port = dc_setting_uint16_create(env, err);
 
     struct options opts[] = {
             {(struct dc_setting *)settings->opts.parent.config_path,
@@ -76,14 +76,14 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
                     dc_string_from_config,
                     "logfile.txt"},
             {(struct dc_setting *)settings->server_hostname,
-                    dc_options_set_uint16,
+                    dc_options_set_string,
                     "server_hostname",
                     required_argument,
                     'h',
                     "SERVER_HOSTNAME",
-                    dc_uint16_from_string,
+                    dc_string_from_string,
                     "server_hostname",
-                    dc_uint16_from_config,
+                    dc_string_from_config,
                     DEFAULT_HOSTNAME},
             {(struct dc_setting *)settings->server_ip,
                     dc_options_set_string,
@@ -115,14 +115,14 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
                     "server_tcp_port",
                     dc_uint16_from_config,
                     dc_uint16_from_string(env, err, DEFAULT_TCP_PORT)},
-            {(struct dc_setting *)settings->admin_tcp_port,
+            {(struct dc_setting *)settings->server_admin_tcp_port,
                     dc_options_set_uint16,
-                    "admin_tcp_port",
+                    "server_admin_tcp_port",
                     required_argument,
                     'a',
-                    "ADMIN_TCP_PORT",
+                    "SERVER_ADMIN_TCP_PORT",
                     dc_uint16_from_string,
-                    "admin_tcp_port",
+                    "server_admin_tcp_port",
                     dc_uint16_from_config,
                     dc_uint16_from_string(env, err, DEFAULT_TCP_PORT_ADMIN_SERVER)},
     };
@@ -154,6 +154,9 @@ static int destroy_settings(const struct dc_posix_env *env,
     dc_setting_string_destroy(env, &app_settings->filename);
     dc_setting_string_destroy(env, &app_settings->server_ip);
     dc_setting_string_destroy(env, &app_settings->server_hostname);
+    dc_setting_uint16_destroy(env, &app_settings->server_admin_tcp_port);
+
+    //TODO destroy settings
     dc_free(env, app_settings->opts.opts, app_settings->opts.opts_count);
     dc_free(env, *psettings, sizeof(struct application_settings));
 
@@ -170,7 +173,9 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     DC_TRACE(env);
     struct application_settings *app_settings;
     app_settings = (struct application_settings *)settings;
+    uint16_t adminPort;
 
+    adminPort = dc_setting_uint16_get(env, app_settings->server_admin_tcp_port);
 
     //open file
     const char *filename;
@@ -187,7 +192,7 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     }
 
     //TCP ADMIN SERVER
-    adminServerInfo->admin_server_socket = create_tcp_server(env, err, dc_setting_string_get(env, app_settings->server_hostname), dc_setting_uint16_get(env, app_settings->admin_tcp_port), dc_setting_string_get(env, app_settings->server_ip));
+    adminServerInfo->admin_server_socket = create_tcp_server(env, err, dc_setting_string_get(env, app_settings->server_hostname), adminPort, dc_setting_string_get(env, app_settings->server_ip));
     if (dc_error_has_error(err) || adminServerInfo->admin_server_socket <= 0) {
         printf("could not create TCP server for admin\n");
         exit(1);
@@ -299,7 +304,7 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
             {
                 if (adminServerInfo->adminClientList[client_id] && FD_ISSET(adminServerInfo->adminClientList[client_id]->tcp_socket, &readfds))
                 {
-                    admin_receiveTcpPacket(env, err, adminServerInfo, serverInfo, client_id);
+                    admin_receiveTcpPacket(env, err, adminServerInfo, serverInfo, client_id, &exit_flag);
                 }
             }
 
@@ -638,6 +643,7 @@ receive_udp_packet(const struct dc_posix_env *env, struct dc_error *err, server_
     ssize_t count;
     count = dc_recvfrom(env, err, udp_server_sd, client_message, client_message_len, 0, (struct sockaddr*) &udp_client_addr, &client_struct_length);
     //printf("count %zd\n", count);
+    //TODO: shit
     if (count < client_message_len) {
         printf("packet not fully received\n");
         return;

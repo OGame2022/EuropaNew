@@ -46,7 +46,7 @@ struct application_settings
     struct dc_setting_string *server_hostname;
     struct dc_setting_uint16 *server_udp_port;
     struct dc_setting_uint16 *server_tcp_port;
-    struct dc_setting_uint16 *admin_tcp_port;
+    struct dc_setting_uint16 *server_admin_tcp_port;
 };
 
 void signal_handler(__attribute__ ((unused)) int signnum);

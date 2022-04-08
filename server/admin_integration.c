@@ -16,7 +16,7 @@ void admin_acceptTCPConnection(const struct dc_posix_env *env, struct dc_error *
 }
 
 void admin_receiveTcpPacket(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo,
-                         server_info *serverInfo, uint16_t admin_id) {
+                         server_info *serverInfo, uint16_t admin_id, volatile sig_atomic_t * exit_flag) {
     /**
      * defining a quick protocol for admin for testing, real protocol can be implemented later.
      * byte 0 - version - uint8_t
@@ -46,7 +46,8 @@ void admin_receiveTcpPacket(const struct dc_posix_env *env, struct dc_error *err
     switch (adminClientPacket.command) {
         case STOP:
             printf("stop command\n");
-            exit(1);
+            *exit_flag = true;
+            //dc_exit(env,1);
             break;
         case USERS:
             printf("user list command\n");
