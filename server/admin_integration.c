@@ -97,6 +97,7 @@ void admin_receiveTcpPacket(const struct dc_posix_env *env, struct dc_error *err
      */
 
     admin_client_packet adminClientPacket = {0};
+    char * message;
     int admin_socket = adminServerInfo->adminClientList[admin_id]->tcp_socket;
     printf("new tcp event from admin: %d socket %d\n", admin_id, admin_socket);
 
@@ -115,7 +116,8 @@ void admin_receiveTcpPacket(const struct dc_posix_env *env, struct dc_error *err
             *exit_flag = true;
             break;
         case USERS:
-            send_admin_client_message(env, err, adminClientPacket.command, NULL, admin_socket);
+            message = dc_strdup(env, err, "User List is returned in this message.");
+            send_admin_client_message(env, err, adminClientPacket.command, message, admin_socket);
             printf("user list command\n");
             break;
         case KICK:
