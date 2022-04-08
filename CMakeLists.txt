@@ -44,6 +44,7 @@ set(SDL_CLIENT_SOURCE_LIST
 
 set(ADMIN_CLIENT_SOURCE_LIST
         "${stirling_game_demo_SOURCE_DIR}/util/network_util.c"
+        "${stirling_game_demo_SOURCE_DIR}/server/admin_integration.c"
         )
 
 set(SERVER_MAIN_SOURCE

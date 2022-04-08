@@ -125,97 +125,89 @@ static int destroy_settings(const struct dc_posix_env *env,
     return 0;
 }
 
+
+
 uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, char buffer[MAX_BUFFER_SIZE]) {
-    uint8_t command;
+    uint8_t enumCommand;
+    char *charCommand;
+    char *commandString;
+    char *endPointer;
 
-    if (dc_strcmp(env, buffer, "/stop\n") == 0) {
-        command = STOP;
-    } else if (dc_strcmp(env, buffer, "/users") == 0) {
-        command = USERS;
-    } else if (dc_strcmp(env, buffer, "/kick") == 0) {
-        command = KICK;
-    } else if (dc_strcmp(env, buffer, "/warn") == 0) {
-        command = WARN;
-    } else if (dc_strcmp(env, buffer, "/notice") == 0) {
-        command = NOTICE;
+    commandString = dc_strdup(env, err, buffer);
+
+    dc_strtok_r(env, commandString, "\n", &endPointer);
+    charCommand = dc_strdup(env, err, dc_strtok_r(env, commandString, " ", &endPointer));
+
+    if (dc_strcmp(env, charCommand, "/stop") == 0) {
+        enumCommand = STOP;
+    } else if (dc_strcmp(env, charCommand, "/users") == 0) {
+        enumCommand = USERS;
+    } else if (dc_strcmp(env, charCommand, "/kick") == 0) {
+        enumCommand = KICK;
+    } else if (dc_strcmp(env, charCommand, "/warn") == 0) {
+        enumCommand = WARN;
+    } else if (dc_strcmp(env, charCommand, "/notice") == 0) {
+        enumCommand = NOTICE;
     } else {
-        command = NOT_RECOGNIZED;
+        enumCommand = NOT_RECOGNIZED;
     }
 
-    return command;
+    return enumCommand;
 }
 
-admin_client_packet * create_client_packet(const struct dc_posix_env *env, struct dc_error *err, enum ADMIN_COMMANDS command, char *message) {
-    admin_client_packet * clientPacket = NULL;
-    clientPacket = dc_calloc(env, err, 1, sizeof(admin_client_packet));
+void admin_client_readPacketFromSocket(const struct dc_posix_env *env, struct dc_error *err, admin_client_packet *adminClientPacket, int admin_socket) {
+    uint8_t header[ADMIN_HEADER_SIZE] = {0};
+    ssize_t count = 0;
+    ssize_t total_received = 0;
+    size_t remaining_bytes = ADMIN_HEADER_SIZE;
 
-    if (dc_error_has_error(err)) {
-        fprintf(stderr, "Error: \"%s\" - %s : %s : %d @ %zu\n", err->message, err->file_name, err->function_name, err->errno_code, err->line_number);
-        dc_exit(env, 1);
+    bool readComplete = false;
+    while(!readComplete && (count = dc_read(env, err, admin_socket, (header + total_received), remaining_bytes)) > 0 && dc_error_has_no_error(err))
+    {
+        remaining_bytes -= (size_t) count;
+        total_received += count;
+        if (remaining_bytes == 0) {
+            readComplete = true;
+        }
     }
-
-    clientPacket->version = ADMIN_PROTOCOL_VERSION;
-    clientPacket->command = (uint8_t) command;
-    clientPacket->target_client_id = 0;
-    if (message) {
-        clientPacket->message_length = (uint16_t) dc_strlen(env, message);
-        clientPacket->message = dc_strdup(env, err, message);
-    } else {
-        clientPacket->message_length = 0;
-        clientPacket->message = NULL;
+    if (count <= 0) {
+        readComplete = true;
     }
+    // parse header
+    (*adminClientPacket).version = header[0];
+    (*adminClientPacket).command = header[1];
+    (*adminClientPacket).target_client_id =  (uint16_t) (header[2] | (uint16_t) header[3] << 8);
+    (*adminClientPacket).message_length =  (uint16_t) (header[4] | (uint16_t) header[5] << 8);
 
-    return clientPacket;
+    if ((*adminClientPacket).message_length > 0) {
+        // read remaining message
+        (*adminClientPacket).message = dc_calloc(env, err, (*adminClientPacket).message_length, sizeof(uint8_t));
+        count = 0;
+        total_received = 0;
+        remaining_bytes = (*adminClientPacket).message_length;
+        readComplete = false;
+        while(!readComplete && (count = dc_read(env, err, admin_socket, ((*adminClientPacket).message + total_received), remaining_bytes)) > 0 && dc_error_has_no_error(err))
+        {
+            remaining_bytes -= (size_t) count;
+            total_received += count;
+            if (remaining_bytes == 0) {
+                readComplete = true;
+            }
+        }
+        if (count <= 0) {
+            readComplete = true;
+        }
+    }
 }
 
-int serialize_client_packet(const struct dc_posix_env *env, struct dc_error *err, admin_client_packet * clientPacket, uint8_t **output_buffer, size_t *size)
-{
-    size_t header_size = 4;
-    uint8_t client_header[header_size];
-//    uint8_t client_header[8];
+admin_client * receiveAdminPacket(const struct dc_posix_env *env, struct dc_error *err, int admin_socket) {
+    admin_client_packet adminClientPacket = {0};
 
-    client_header[0] = clientPacket->version;
-    client_header[1] = clientPacket->command;
-    client_header[2] = clientPacket->target_client_id & 0xFF;
-    client_header[3] = clientPacket->target_client_id >> 8;
-//    client_header[4] = clientPacket->message_length & 0xFF;
-//    client_header[5] = clientPacket->message_length >> 8;
-//    client_header[6] = clientPacket->message & 0xFF;
-//    client_header[7] = clientPacket->message >> 8;
+    admin_client_readPacketFromSocket(env, err, &adminClientPacket, admin_socket);
 
-    *output_buffer = dc_calloc(env, err, (sizeof(client_header)) + clientPacket->message_length, sizeof(uint8_t));
-    if (dc_error_has_error(err)) {
-        fprintf(stderr, "Error: \"%s\" - %s : %s : %d @ %zu\n", err->message, err->file_name, err->function_name, err->errno_code, err->line_number);
-        dc_exit(env, 1);
+    if (adminClientPacket.command == USERS) {
+        printf("User List\n");
     }
-    dc_memcpy(env, *output_buffer, client_header, sizeof(client_header));
-    dc_memcpy(env, *output_buffer + sizeof(client_header), clientPacket->message, clientPacket->message_length);
-
-    *size = (size_t) (sizeof(client_header) + clientPacket->message_length);
-
-    return 0;
-}
-
-
-
-void send_admin_client_message(const struct dc_posix_env *env, struct dc_error *err, enum ADMIN_COMMANDS command, char *message, int tcp_server_socket) {
-    admin_client_packet *clientPacket;
-    uint8_t *output_buffer = NULL;
-    size_t packetSize = 0;
-
-    clientPacket = create_client_packet(env, err, command, message);
-
-    serialize_client_packet(env, err, clientPacket, &output_buffer, &packetSize);
-
-    dc_write(env, err, tcp_server_socket, output_buffer, packetSize);
-    dc_free(env, output_buffer, packetSize);
-
-        if (clientPacket->message) {
-        dc_free(env, clientPacket->message, dc_strlen(env, clientPacket->message) + 1);
-    }
-    dc_free(env, clientPacket, sizeof(admin_client_packet));
-
-
 }
 
 static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_application_settings *settings)
@@ -256,8 +248,6 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
 
         if(select(maxfd + 1, &readfds, NULL, NULL, NULL) > 0){
             if(FD_ISSET(STDIN_FILENO, &readfds)) {
-
-                // To use messages, we will need to use strtok or similar to parse the buffer for additional input.
                 dc_read(env, err, STDIN_FILENO, buffer, sizeof(buffer));
                 command = parseAdminCommand(env, err, buffer);
                 if (command == NOT_RECOGNIZED) {
@@ -269,7 +259,7 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
 
             // check for new client connections
             if (FD_ISSET(tcp_server_socket, &readfds)) {
-
+                receiveAdminPacket(env, err, tcp_server_socket);
             }
 
         }
@@ -278,8 +268,6 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
 
     return EXIT_SUCCESS;
 }
-
-
 
 static void error_reporter(const struct dc_error *err)
 {
@@ -294,8 +282,6 @@ static void trace_reporter(__attribute__((unused)) const struct dc_posix_env *en
 {
     fprintf(stdout, "TRACE: %s : %s : @ %zu\n", file_name, function_name, line_number);
 }
-
-
 
 void signal_handler(__attribute__ ((unused)) int signnum) {
     printf("\nexit flag set\n");
