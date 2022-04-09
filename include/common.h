@@ -24,9 +24,12 @@
 
 
 #define DEFAULT_TCP_PORT "7523"
-#define DEFAULT_UDP_PORT "4983"
+#define DEFAULT_UDP_PORT "7523"
 #define DEFAULT_PORT     "7667"
 #define DEFAULT_TCP_PORT_ADMIN_SERVER "8523"
+
+#define GAME_PATH "tpf_unix_sock.game"
+#define CHAT_PATH "tpf_unix_sock.chat"
 
 #define DEFAULT_HOSTNAME "127.0.0.1"
 #define MAX_TCP_CLIENTS 100
@@ -49,6 +52,11 @@ typedef struct {
     uint16_t position_y;
     client_input_state inputState;
 } client;
+
+typedef struct {
+    const char * server_path;
+    const char * client_path;
+} ipc_path_pair;
 
 typedef struct {
     uint16_t shooters_id;

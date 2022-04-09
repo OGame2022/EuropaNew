@@ -217,6 +217,12 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     int udp_server_sd = create_udp_server(env, err, dc_setting_string_get(env, app_settings->server_hostname), dc_setting_uint16_get(env, app_settings->server_udp_port), dc_setting_string_get(env, app_settings->server_ip));
 
 
+//    ipc_path_pair gameIpcPathPair = {GAME_PATH, CHAT_PATH};
+//    pthread_t game_thread_id;
+//    printf("Starting child thread\n");
+//    pthread_create(&game_thread_id, NULL, (void *(*)(void *)) thread_listen_and_ping, &gameIpcPathPair);
+//    ipcSocketInfo.game_socket = accept_ipc_connection(ipcSocketInfo.server_socket);
+
     fd_set readfds;
 
     uint64_t packet_no = 0;
