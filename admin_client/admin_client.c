@@ -267,7 +267,7 @@ void write_to_log(const struct dc_posix_env *env, struct dc_error *err, char *me
     dc_close(env, err, logFD);
 }
 
-admin_client * receiveAdminPacket(const struct dc_posix_env *env, struct dc_error *err, int admin_socket) {
+void receiveAdminPacket(const struct dc_posix_env *env, struct dc_error *err, int admin_socket) {
     admin_client_packet adminClientPacket = {0};
 
     admin_client_readPacketFromSocket(env, err, &adminClientPacket, admin_socket);
