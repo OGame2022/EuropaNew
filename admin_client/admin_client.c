@@ -1,5 +1,8 @@
 #include "admin_client.h"
 #include "ncurses_client.h"
+#include "network_util.h"
+
+static volatile sig_atomic_t           exit_flag;
 
 int main(int argc, char *argv[])
 {
