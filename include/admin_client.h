@@ -1,6 +1,7 @@
 #ifndef STIRLING_GAME_DEMO_ADMIN_CLIENT_H
 #define STIRLING_GAME_DEMO_ADMIN_CLIENT_H
 
+#include <dc_posix/dc_stdio.h>
 #include "default_config.h"
 #include "admin_integration.h"
 
@@ -14,6 +15,7 @@ struct admin_application_settings
     struct dc_setting_uint16 *port;
 };
 
+void write_log_to_console(const struct dc_posix_env *env, struct dc_error *err);
 uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, char buffer[MAX_BUFFER_SIZE], volatile sig_atomic_t * exit_flag);
 void admin_client_readPacketFromSocket(const struct dc_posix_env *env, struct dc_error *err, admin_client_packet *adminClientPacket, int admin_socket);
 void write_to_log(const struct dc_posix_env *env, struct dc_error *err, char *message);
