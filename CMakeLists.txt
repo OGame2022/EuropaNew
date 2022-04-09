@@ -31,7 +31,7 @@ set(COMMON_SOURCE_LIST
 set(SERVER_SOURCE_LIST
         "${stirling_game_demo_SOURCE_DIR}/util/network_util.c"
         "${stirling_game_demo_SOURCE_DIR}/server/admin_integration.c"
-        "${stirling_game_demo_SOURCE_DIR}/src/chat_server.c"
+        "${stirling_game_demo_SOURCE_DIR}/server/chat_server.c"
         )
 
 set(NCURSES_CLIENT_SOURCE_LIST

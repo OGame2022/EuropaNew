@@ -39,6 +39,6 @@
 #define CHAT_DEFAULT_HOSTNAME "localhost"
 
 
-void *run_chat_server(const char *parent_socket_path);
+void *run_chat_server(const char * hostname, in_port_t tcp_port, in_port_t udp_port, const char * ip_version);
 
 #endif //STIRLING_GAME_DEMO_CHAT_SERVER_H
