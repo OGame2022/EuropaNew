@@ -2,6 +2,9 @@
 
 cmake_minimum_required(VERSION 3.19)
 
+#For Mac Operation version should be higher than 10.5
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15.6")
+
 # Project name and a few useful settings. Other commands can pick up the results
 project(stirling_game_demo
         VERSION 0.3
@@ -41,6 +44,7 @@ set(SDL_CLIENT_SOURCE_LIST
 
 set(ADMIN_CLIENT_SOURCE_LIST
         "${stirling_game_demo_SOURCE_DIR}/util/network_util.c"
+        "${stirling_game_demo_SOURCE_DIR}/server/admin_integration.c"
         )
 
 set(SERVER_MAIN_SOURCE

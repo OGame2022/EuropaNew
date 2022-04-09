@@ -43,8 +43,10 @@ struct application_settings
     struct dc_opt_settings opts;
     struct dc_setting_string *filename;
     struct dc_setting_string *server_ip;
+    struct dc_setting_string *server_hostname;
     struct dc_setting_uint16 *server_udp_port;
     struct dc_setting_uint16 *server_tcp_port;
+    struct dc_setting_uint16 *server_admin_tcp_port;
 };
 
 void signal_handler(__attribute__ ((unused)) int signnum);
@@ -72,7 +74,7 @@ static void acceptTCPConnection(const struct dc_posix_env *env, struct dc_error 
 
 //static int create_tcp_server(const struct dc_posix_env *env, struct dc_error *err, const char *hostname, in_port_t port);
 
-static int create_udp_server(const struct dc_posix_env *env, struct dc_error *err, const char *hostname, in_port_t port);
+
 
 static void
 receive_tcp_packet(const struct dc_posix_env *env, struct dc_error *err, server_info *serverInfo, uint16_t client_id);

@@ -36,17 +36,18 @@
 #define ADMIN_HEADER_SIZE 6
 #define MAX_ADMIN_CLIENTS 15
 #define ADMIN_PROTOCOL_VERSION 1
+#define MAX_BUFFER_SIZE 1024
 
 typedef struct {
     uint8_t version;
     uint8_t command;
     uint16_t target_client_id;
     uint16_t message_length;
-    uint8_t * message;
+    char * message;
 } admin_client_packet;
 
 enum ADMIN_COMMANDS {
-    STOP,
+    STOP = 1,
     USERS,
     KICK,
     WARN,
@@ -66,11 +67,15 @@ typedef struct {
 
 void admin_readPacketFromSocket(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo,
                            uint16_t admin_id, admin_client_packet *adminClientPacket, int admin_socket);
-
-void admin_receiveTcpPacket(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo, server_info *serverInfo, uint16_t admin_id);
+char * write_user_list_to_string(const struct dc_posix_env *env, struct dc_error *err, server_info *serverInfo);
+void admin_receiveTcpPacket(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo, server_info *serverInfo, uint16_t admin_id, volatile sig_atomic_t * exit_flag);
 
 void admin_acceptTCPConnection(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo);
 
 void admin_addToClientList(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo, int admin_tcp_socket);
 void admin_removeFromClientList(const struct dc_posix_env *env, struct dc_error *err, admin_server_info *adminServerInfo, uint16_t admin_id);
+admin_client_packet * create_client_packet(const struct dc_posix_env *env, struct dc_error *err, enum ADMIN_COMMANDS command, char *message);
+int serialize_client_packet(const struct dc_posix_env *env, struct dc_error *err, admin_client_packet * clientPacket, uint8_t **output_buffer, size_t *size);
+void send_admin_client_message(const struct dc_posix_env *env, struct dc_error *err, enum ADMIN_COMMANDS command, char *message, int tcp_socket);
+
 #endif //STIRLING_GAME_DEMO_ADMIN_H

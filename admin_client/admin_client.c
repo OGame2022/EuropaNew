@@ -38,6 +38,7 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
     DC_TRACE(env);
     settings = dc_malloc(env, err, sizeof(struct admin_application_settings));
 
+
     if(settings == NULL)
     {
         return NULL;
@@ -86,9 +87,9 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
                     'p',
                     "PORT",
                     dc_uint16_from_string,
-                    "server_tcp_port",
+                    "port",
                     dc_uint16_from_config,
-                    dc_uint16_from_string(env, err, DEFAULT_PORT)},
+                    dc_uint16_from_string(env, err, DEFAULT_TCP_PORT_ADMIN_SERVER)},
                 };
 
     // note the trick here - we use calloc and add 1 to ensure the last line is all 0/NULL
@@ -124,24 +125,137 @@ static int destroy_settings(const struct dc_posix_env *env,
     return 0;
 }
 
-uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, char buffer[MAX_BUFFER_SIZE]) {
-    uint8_t command;
 
-    if (dc_strcmp(env, buffer, "/stop") == 0) {
-        command = STOP;
-    } else if (dc_strcmp(env, buffer, "/users") == 0) {
-        command = USERS;
-    } else if (dc_strcmp(env, buffer, "/kick") == 0) {
-        command = KICK;
-    } else if (dc_strcmp(env, buffer, "/warn") == 0) {
-        command = WARN;
-    } else if (dc_strcmp(env, buffer, "/notice") == 0) {
-        command = NOTICE;
+
+uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, char buffer[MAX_BUFFER_SIZE], volatile sig_atomic_t * exitFlag) {
+    uint8_t enumCommand;
+    char *charCommand;
+    char *commandString;
+    char *endPointer;
+
+    commandString = dc_strdup(env, err, buffer);
+
+    dc_strtok_r(env, commandString, "\n", &endPointer);
+    charCommand = dc_strdup(env, err, dc_strtok_r(env, commandString, " ", &endPointer));
+
+    if (dc_strcmp(env, charCommand, "/stop") == 0) {
+        enumCommand = STOP;
+        *exitFlag = true;
+    } else if (dc_strcmp(env, charCommand, "/users") == 0) {
+        enumCommand = USERS;
+    } else if (dc_strcmp(env, charCommand, "/kick") == 0) {
+        enumCommand = KICK;
+    } else if (dc_strcmp(env, charCommand, "/warn") == 0) {
+        enumCommand = WARN;
+    } else if (dc_strcmp(env, charCommand, "/notice") == 0) {
+        enumCommand = NOTICE;
+    } else if (dc_strcmp(env, charCommand, "/quit") == 0) {
+        *exitFlag = true;
     } else {
-        command = NOT_RECOGNIZED;
+        enumCommand = NOT_RECOGNIZED;
     }
 
-    return command;
+    return enumCommand;
+}
+
+void admin_client_readPacketFromSocket(const struct dc_posix_env *env, struct dc_error *err, admin_client_packet *adminClientPacket, int admin_socket) {
+    uint8_t header[ADMIN_HEADER_SIZE] = {0};
+    ssize_t count = 0;
+    ssize_t total_received = 0;
+    size_t remaining_bytes = ADMIN_HEADER_SIZE;
+
+    bool readComplete = false;
+    while(!readComplete && (count = dc_read(env, err, admin_socket, (header + total_received), remaining_bytes)) > 0 && dc_error_has_no_error(err))
+    {
+        remaining_bytes -= (size_t) count;
+        total_received += count;
+        if (remaining_bytes == 0) {
+            readComplete = true;
+        }
+    }
+    if (count <= 0) {
+        readComplete = true;
+    }
+    // parse header
+    (*adminClientPacket).version = header[0];
+    (*adminClientPacket).command = header[1];
+    (*adminClientPacket).target_client_id =  (uint16_t) (header[2] | (uint16_t) header[3] << 8);
+    (*adminClientPacket).message_length =  (uint16_t) (header[4] | (uint16_t) header[5] << 8);
+
+    if ((*adminClientPacket).message_length > 0) {
+        // read remaining message
+        (*adminClientPacket).message = dc_calloc(env, err, (*adminClientPacket).message_length, sizeof(uint8_t));
+        count = 0;
+        total_received = 0;
+        remaining_bytes = (*adminClientPacket).message_length;
+        readComplete = false;
+        while(!readComplete && (count = dc_read(env, err, admin_socket, ((*adminClientPacket).message + total_received), remaining_bytes)) > 0 && dc_error_has_no_error(err))
+        {
+            remaining_bytes -= (size_t) count;
+            total_received += count;
+            if (remaining_bytes == 0) {
+                readComplete = true;
+            }
+        }
+        if (count <= 0) {
+            readComplete = true;
+        }
+    }
+}
+
+void write_to_log(const struct dc_posix_env *env, struct dc_error *err, char *message) {
+    char *messageCopy;
+    char *endPointer;
+    int logFD;
+    char *buffer;
+    char timeBuffer[MAX_BUFFER_SIZE];
+    time_t rawtime;
+    struct tm * timeinfo;
+    size_t wordCounter = 0;
+
+    logFD = dc_open(env, err, "../../adminLogs/admin_client_log.txt", O_WRONLY|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);;
+
+    time(&rawtime);
+    timeinfo = localtime (&rawtime);
+    sprintf(timeBuffer, "Log Entry Date: %s", asctime (timeinfo));
+    dc_write(env, err, logFD,  timeBuffer, dc_strlen(env, timeBuffer));
+
+    dc_write(env, err, logFD,  "Client List <ID> <IP>:\n", dc_strlen(env, "Client List <ID> <IP>:\n"));
+
+    messageCopy = dc_strdup(env, err, message);
+
+    buffer = dc_strtok_r(env, messageCopy, " ", &endPointer);
+    while (buffer) {
+        if (wordCounter > 0) {
+            buffer = dc_strtok_r(env, endPointer, " ", &endPointer);
+            wordCounter++;
+        }
+        if (buffer) {
+            dc_write(env, err, logFD,  buffer, dc_strlen(env, buffer));
+            dc_write(env, err, logFD,  " ", 1);
+            buffer = dc_strtok_r(env, endPointer, " ", &endPointer);
+            wordCounter++;
+            dc_write(env, err, logFD,  buffer, dc_strlen(env, buffer));
+            dc_write(env, err, logFD,  " ", 1);
+            dc_write(env, err, logFD,  "\n", 1);
+        }
+    }
+    dc_close(env, err, logFD);
+}
+
+admin_client * receiveAdminPacket(const struct dc_posix_env *env, struct dc_error *err, int admin_socket) {
+    admin_client_packet adminClientPacket = {0};
+
+    admin_client_readPacketFromSocket(env, err, &adminClientPacket, admin_socket);
+
+    if (adminClientPacket.command == USERS) {
+        if (adminClientPacket.message) {
+            write_to_log(env, err, adminClientPacket.message);
+            printf("Client List written to admin_client_log.txt\n");
+        } else {
+            printf("No Game Clients Connected.\n");
+        }
+    }
 }
 
 static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_application_settings *settings)
@@ -162,22 +276,15 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     int tcp_server_socket = connect_to_tcp_server(env, err, hostname, port, DEFAULT_IP_VERSION);
     if (dc_error_has_error(err) || tcp_server_socket <= 0) {
         printf("could not connect to TCP socket\n");
-        exit(1);
+        dc_exit(env, 1);
     }
 
     // Clean buffers:
     char server_message[2000];
     char client_message[2000];
-    memset(server_message, '\0', sizeof(server_message));
-    memset(client_message, '\0', sizeof(client_message));
+    dc_memset(env, server_message, '\0', sizeof(server_message));
+    dc_memset(env, client_message, '\0', sizeof(client_message));
     bool exitFlag = false;
-
-    // wait for server to give you an ID
-    ssize_t count = dc_read(env, err, tcp_server_socket, server_message, sizeof(server_message));
-    if (count <= 0) {
-        printf("could not get ID\n");
-        exit(1);
-    }
 
     fd_set readfds;
     while (!exit_flag) {
@@ -188,28 +295,27 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
         int maxfd = tcp_server_socket;
 
         if(select(maxfd + 1, &readfds, NULL, NULL, NULL) > 0){
-            // check for STDIN Messages (commands)
             if(FD_ISSET(STDIN_FILENO, &readfds)) {
                 dc_read(env, err, STDIN_FILENO, buffer, sizeof(buffer));
-                command = parseAdminCommand(env, err, buffer);
-                if (command != NOT_RECOGNIZED) {
-                    // Do something with it
+                command = parseAdminCommand(env, err, buffer, &exit_flag);
+                if (command == NOT_RECOGNIZED) {
+                    printf("Command not recognized\n");
+                } else {
+                    send_admin_client_message(env, err, command, NULL, tcp_server_socket);
                 }
             }
 
             // check for new client connections
             if (FD_ISSET(tcp_server_socket, &readfds)) {
-
+                receiveAdminPacket(env, err, tcp_server_socket);
             }
 
         }
     }
-    close(tcp_server_socket);
+    dc_close(env, err, tcp_server_socket);
 
     return EXIT_SUCCESS;
 }
-
-
 
 static void error_reporter(const struct dc_error *err)
 {
@@ -224,8 +330,6 @@ static void trace_reporter(__attribute__((unused)) const struct dc_posix_env *en
 {
     fprintf(stdout, "TRACE: %s : %s : @ %zu\n", file_name, function_name, line_number);
 }
-
-
 
 void signal_handler(__attribute__ ((unused)) int signnum) {
     printf("\nexit flag set\n");
