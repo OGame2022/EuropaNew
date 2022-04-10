@@ -1,6 +1,7 @@
 
 #include "server.h"
 
+
 int main(int argc, char *argv[])
 {
     dc_posix_tracer tracer;
@@ -217,22 +218,44 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     int udp_server_sd = create_udp_server(env, err, dc_setting_string_get(env, app_settings->server_hostname), dc_setting_uint16_get(env, app_settings->server_udp_port), dc_setting_string_get(env, app_settings->server_ip));
 
 
+    ipc_path_pair ipcPathPair = {
+            LISTEN_PATH,
+            CLOCK_PATH
+    };
+
+    struct timespec tick_rate = {
+            0,
+            10000000
+    };
+
+    struct clock_thread_args clockThreadArgs = {
+        &ipcPathPair,
+        &tick_rate
+    };
+    //clock socket
+    int clock_main_socket = create_unix_stream_socket(ipcPathPair.listen_path);
+
+    pthread_t clock_thread;
+    printf("Starting clock thread\n");
+    pthread_create(&clock_thread, NULL, (void *(*)(void *)) clock_thread_socket, &clockThreadArgs);
+    int clock_listen_socket = accept_ipc_connection(clock_main_socket);
+
     fd_set readfds;
 
     uint64_t packet_no = 0;
     // 100 ticks/s
-    const struct timeval tick_rate = {0, 10000};
-    struct timeval timeout = tick_rate;
+//    const struct timeval tick_rate = {0, 10000};
+//    struct timeval timeout = tick_rate;
 
     while (!exit_flag) {
 
-        if (timeout.tv_usec == 0) {
-            timeout.tv_usec = tick_rate.tv_usec;
-            //printf("putting out packet %lu\n", packet_no);
-            packet_no++;
-            process_game_state(serverInfo);
-            send_game_state(serverInfo, udp_server_sd);
-        }
+//        if (timeout.tv_usec == 0) {
+//            timeout.tv_usec = tick_rate.tv_usec;
+//            //printf("putting out packet %lu\n", packet_no);
+//            packet_no++;
+//            process_game_state(serverInfo);
+//            send_game_state(serverInfo, udp_server_sd);
+//        }
 
 
         FD_ZERO(&readfds);
@@ -241,9 +264,14 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
         FD_SET(adminServerInfo->admin_server_socket, &readfds);
         FD_SET(STDIN_FILENO, &readfds);
 
+        FD_SET(clock_listen_socket, &readfds);
+
         int maxfd = udp_server_sd;
         if (tcp_server_sd > maxfd) {
             maxfd = tcp_server_sd;
+        }
+        if (clock_listen_socket > maxfd) {
+            maxfd = clock_listen_socket;
         }
 
         if (adminServerInfo->admin_server_socket > maxfd) {
@@ -284,7 +312,16 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
 
 
         // the big select statement
-        if(select(maxfd + 1, &readfds, NULL, NULL, &timeout) > 0){
+        if(select(maxfd + 1, &readfds, NULL, NULL, NULL) > 0){
+
+            if(FD_ISSET(clock_listen_socket, &readfds)) {
+                process_game_state(serverInfo);
+                send_game_state(serverInfo, udp_server_sd);
+                // clear the read buffer;
+                //TODO: modify this to read as many times as necessary to clear the buffer
+                read_packet_from_unix_socket(clock_listen_socket);
+
+            }
 
             if(FD_ISSET(STDIN_FILENO, &readfds)) {
                 exit_flag = true;
@@ -327,6 +364,18 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
 
         } else {
             //printf("select timed out\n");
+        }
+    }
+
+    for (uint16_t client_id = 0; client_id < MAX_CLIENTS; ++client_id) {
+        if (serverInfo->connections[client_id]) {
+            removeFromClientList(serverInfo, client_id);
+        }
+    }
+
+    for (uint16_t client_id = 0; client_id < MAX_ADMIN_CLIENTS; ++client_id) {
+        if (adminServerInfo->adminClientList[client_id]) {
+            admin_removeFromClientList(env, err, adminServerInfo, client_id);
         }
     }
 
@@ -497,14 +546,14 @@ static void send_game_state(server_info *serverInfo, int udp_socket) {
     // FROM STACK OVERFLOW: https://stackoverflow.com/a/35153234
     // USER https://stackoverflow.com/users/3482801/straw1239
     for(int i = 0; i < 8; i++) {
-        header[i] = (uint8_t) ((packet_no >> 8*(7 - i)) & 0xFF);
+        header[i] = (uint8_t) ((packet_no >> 8*(7 - i)) & 0xFFu);
     }
 
-    header[8] = num_entities & 0xFF;
-    header[9] = num_entities >> 8;
+    header[8] = num_entities & 0xFFu;
+    header[9] = num_entities >> 8u;
 
-    header[10] = num_bullets & 0xFF;
-    header[11] = num_bullets >> 8;
+    header[10] = num_bullets & 0xFFu;
+    header[11] = num_bullets >> 8u;
 
     uint8_t * entity_list = calloc(num_entities, entity_packet_size);
 
@@ -738,8 +787,8 @@ static void addToClientList(server_info *serverInfo, int client_tcp_socket) {
             serverInfo->connections[client_id]->client_id = client_id;
             serverInfo->connections[client_id]->tcp_socket = client_tcp_socket;
             // everything else is null since calloc
-            uint8_t buffer[2] = {client_id & 0xFF, client_id >> 8};
-            write(client_tcp_socket, buffer, 2);
+            uint8_t id_packet[2] = {client_id & 0xFF, client_id >> 8};
+            write(client_tcp_socket, id_packet, 2);
             return;
         }
     }

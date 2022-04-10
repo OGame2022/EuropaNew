@@ -1,5 +1,8 @@
 #include "admin_client.h"
 #include "ncurses_client.h"
+#include "network_util.h"
+
+static volatile sig_atomic_t           exit_flag;
 
 int main(int argc, char *argv[])
 {
@@ -125,7 +128,27 @@ static int destroy_settings(const struct dc_posix_env *env,
     return 0;
 }
 
+void write_log_to_console(const struct dc_posix_env *env, struct dc_error *err) {
+    int adminLogFD;
+    FILE *adminLogFileDescriptor;
+    char *logStorage = NULL;
+    size_t lineSize = 0;
 
+    adminLogFD = dc_open(env, err, "../../adminLogs/admin_client_log.txt", O_RDONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+    adminLogFileDescriptor = dc_fdopen(env, err, adminLogFD, "r");
+
+    dc_write(env, err, STDOUT_FILENO, "Displaying User List Log\n", dc_strlen(env, "Displaying User List Log\n"));
+
+    dc_write(env, err, STDOUT_FILENO, "----------------------------------\n", dc_strlen(env, "----------------------------------\n"));
+
+    while(dc_getline(env, err, &logStorage, &lineSize, adminLogFileDescriptor) > 0) {
+        dc_write(env, err, STDOUT_FILENO, logStorage, dc_strlen(env, logStorage));
+        dc_memset(env, logStorage, 0, sizeof(logStorage));
+    }
+    dc_free(env, logStorage, lineSize);
+
+    dc_write(env, err, STDOUT_FILENO, "----------------------------------\n", dc_strlen(env, "----------------------------------\n"));
+}
 
 uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, char buffer[MAX_BUFFER_SIZE], volatile sig_atomic_t * exitFlag) {
     uint8_t enumCommand;
@@ -151,10 +174,11 @@ uint8_t parseAdminCommand(const struct dc_posix_env *env, struct dc_error *err, 
         enumCommand = NOTICE;
     } else if (dc_strcmp(env, charCommand, "/quit") == 0) {
         *exitFlag = true;
-    } else {
+    } else if (dc_strcmp(env, charCommand, "/log") == 0) {
+        write_log_to_console(env, err);
+    }  else {
         enumCommand = NOT_RECOGNIZED;
     }
-
     return enumCommand;
 }
 
@@ -243,7 +267,7 @@ void write_to_log(const struct dc_posix_env *env, struct dc_error *err, char *me
     dc_close(env, err, logFD);
 }
 
-admin_client * receiveAdminPacket(const struct dc_posix_env *env, struct dc_error *err, int admin_socket) {
+void receiveAdminPacket(const struct dc_posix_env *env, struct dc_error *err, int admin_socket) {
     admin_client_packet adminClientPacket = {0};
 
     admin_client_readPacketFromSocket(env, err, &adminClientPacket, admin_socket);

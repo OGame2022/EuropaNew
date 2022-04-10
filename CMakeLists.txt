@@ -22,6 +22,7 @@ set(HEADER_LIST
         "${stirling_game_demo_SOURCE_DIR}/include/chat_server.h"
         "${stirling_game_demo_SOURCE_DIR}/include/ncurses_client.h"
         "${stirling_game_demo_SOURCE_DIR}/include/sdl_client.h"
+        "${stirling_game_demo_SOURCE_DIR}/include/clock_thread_ipc.h"
         )
 
 set(COMMON_SOURCE_LIST
@@ -29,16 +30,19 @@ set(COMMON_SOURCE_LIST
         )
 
 set(SERVER_SOURCE_LIST
+        "${stirling_game_demo_SOURCE_DIR}/util/clock_thread_ipc.c"
         "${stirling_game_demo_SOURCE_DIR}/util/network_util.c"
         "${stirling_game_demo_SOURCE_DIR}/server/admin_integration.c"
-        "${stirling_game_demo_SOURCE_DIR}/src/chat_server.c"
+        "${stirling_game_demo_SOURCE_DIR}/server/chat_server.c"
         )
 
 set(NCURSES_CLIENT_SOURCE_LIST
+        "${stirling_game_demo_SOURCE_DIR}/util/clock_thread_ipc.c"
         "${stirling_game_demo_SOURCE_DIR}/util/network_util.c"
         )
 
 set(SDL_CLIENT_SOURCE_LIST
+        "${stirling_game_demo_SOURCE_DIR}/util/clock_thread_ipc.c"
         "${stirling_game_demo_SOURCE_DIR}/util/network_util.c"
         )
 

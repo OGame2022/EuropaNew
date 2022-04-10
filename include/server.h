@@ -36,7 +36,7 @@
 #include <common.h>
 #include "network_util.h"
 #include "admin_integration.h"
-
+#include "clock_thread_ipc.h"
 
 struct application_settings
 {
