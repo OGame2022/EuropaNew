@@ -1,5 +1,6 @@
 //
 // Created by drep on 2022-04-10.
+// CODE EXAMPLES AND REFERENCES FROM https://www.ibm.com/docs/en/ztpf/1.1.0.15?topic=considerations-unix-domain-sockets
 //
 
 #include "clock_thread_ipc.h";
