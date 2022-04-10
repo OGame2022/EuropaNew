@@ -29,3 +29,7 @@
 #define KEY_LEFT 2
 #define KEY_RIGHT 3
 #define KEY_FIRE 4
+
+//net
+
+#define BUFFER_ID 1024
