@@ -11,6 +11,7 @@ struct application_settings
 {
     struct dc_opt_settings    opts;
     struct dc_setting_string *server_ip;
+    struct dc_setting_string *server_hostname;
     struct dc_setting_uint16 *server_udp_port;
     struct dc_setting_uint16 *server_tcp_port;
 };
