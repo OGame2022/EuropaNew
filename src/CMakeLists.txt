@@ -87,6 +87,7 @@ target_link_libraries(server PRIVATE ${LIBDC_UTIL})
 target_link_libraries(server PRIVATE ${LIBDC_FSM})
 target_link_libraries(server PRIVATE ${LIBDC_APPLICATION})
 target_link_libraries(server PRIVATE ${LIBDC_NETWORK})
+target_link_libraries(server PRIVATE Threads::Threads)
 
 target_link_libraries(ncurses_client PRIVATE ${LIBM})
 target_link_libraries(ncurses_client PRIVATE ${LIBDC_ERROR})

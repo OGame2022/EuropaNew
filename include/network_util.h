@@ -13,7 +13,6 @@
 #include <dc_network/common.h>
 #include <dc_network/options.h>
 #include <dc_network/server.h>
-#include <dc_posix/sys/dc_msg.h>
 #include <dc_posix/dc_netdb.h>
 #include <dc_posix/dc_signal.h>
 #include <dc_posix/dc_stdlib.h>

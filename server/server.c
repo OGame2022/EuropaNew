@@ -336,6 +336,18 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
         }
     }
 
+    for (uint16_t client_id = 0; client_id < MAX_CLIENTS; ++client_id) {
+        if (serverInfo->connections[client_id]) {
+            removeFromClientList(serverInfo, client_id);
+        }
+    }
+
+    for (uint16_t client_id = 0; client_id < MAX_ADMIN_CLIENTS; ++client_id) {
+        if (adminServerInfo->adminClientList[client_id]) {
+            admin_removeFromClientList(env, err, adminServerInfo, client_id);
+        }
+    }
+
     // Close the sockets:
     close(udp_server_sd);
     close(tcp_server_sd);
@@ -503,14 +515,14 @@ static void send_game_state(server_info *serverInfo, int udp_socket) {
     // FROM STACK OVERFLOW: https://stackoverflow.com/a/35153234
     // USER https://stackoverflow.com/users/3482801/straw1239
     for(int i = 0; i < 8; i++) {
-        header[i] = (uint8_t) ((packet_no >> 8*(7 - i)) & 0xFF);
+        header[i] = (uint8_t) ((packet_no >> 8*(7 - i)) & 0xFFu);
     }
 
-    header[8] = num_entities & 0xFF;
-    header[9] = num_entities >> 8;
+    header[8] = num_entities & 0xFFu;
+    header[9] = num_entities >> 8u;
 
-    header[10] = num_bullets & 0xFF;
-    header[11] = num_bullets >> 8;
+    header[10] = num_bullets & 0xFFu;
+    header[11] = num_bullets >> 8u;
 
     uint8_t * entity_list = calloc(num_entities, entity_packet_size);
 
@@ -744,8 +756,8 @@ static void addToClientList(server_info *serverInfo, int client_tcp_socket) {
             serverInfo->connections[client_id]->client_id = client_id;
             serverInfo->connections[client_id]->tcp_socket = client_tcp_socket;
             // everything else is null since calloc
-            uint8_t buffer[2] = {client_id & 0xFF, client_id >> 8};
-            write(client_tcp_socket, buffer, 2);
+            uint8_t id_packet[2] = {client_id & 0xFF, client_id >> 8};
+            write(client_tcp_socket, id_packet, 2);
             return;
         }
     }

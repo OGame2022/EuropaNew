@@ -204,14 +204,13 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     udp_server_addr.sin_addr.s_addr = inet_addr(dc_setting_string_get(env, app_settings->server_ip));
 
     // Clean buffers:
-    char server_message[2000], client_message[2000];
-    memset(server_message, '\0', sizeof(server_message));
-    memset(client_message, '\0', sizeof(client_message));
-    bool    exitFlag = false;
+    uint8_t id_packet[2];
+    size_t id_packet_len = 2;
+    memset(id_packet, '\0', id_packet_len);
 
-    // wait for server to give you an ID
-    ssize_t sent     = dc_read(env, err, tcp_server_socket, server_message, sizeof(server_message));
-    if(sent <= 0)
+     // wait for server to give you an ID
+    ssize_t bytes_recv = dc_read(env, err, tcp_server_socket, id_packet, id_packet_len);
+    if(bytes_recv <= 0)
     {
         printf("could not get ID\n");
         exit(1);
@@ -219,7 +218,7 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
 
     // get id from server
     // char * tempID = strdup("001");
-    uint16_t client_id = (uint16_t)(server_message[0] | (uint16_t)server_message[1] << 8);
+    uint16_t client_id = (uint16_t)(id_packet[0] | (uint16_t)id_packet[1] << 8);
     printf("client id %hu\n", client_id);
 
     // 100 ticks/s
@@ -307,7 +306,7 @@ static void receive_udp_packet(const struct dc_posix_env *env, struct dc_error *
     ssize_t count;
     count = recvfrom(clientInfo->udp_socket, header, (size_t)header_size, MSG_PEEK | MSG_WAITALL, NULL, NULL);
     // printf("count %zd\n", count);
-    if(count < 12)
+    if(count < header_size)
     {
         // printf("packet not fully received\n");
         return;
@@ -495,7 +494,7 @@ void *ncurses_thread(client_info *clientInfo)
     keypad(stdscr, TRUE); /* allow input from special keys */
     curs_set(0);          /* make cursor invisible */
     cbreak();             /* enables intant input */
-    draw_game(clientInfo);
+    //draw_game(clientInfo);
 
     // printw("\n");
     // mvaddch(1, 1, '0');
@@ -578,7 +577,6 @@ void draw_game(client_info *clientInfo)
     // draw the bullets
     bullet_node *bulletNode;
     bulletNode = clientInfo->bulletList;
-
     while(bulletNode)
     {
         mvaddch(bulletNode->bullet->position_x, bulletNode->bullet->position_y, '*');

@@ -23,15 +23,15 @@
 #include <stdint.h>
 
 
-#define DEFAULT_TCP_PORT "7523"
-#define DEFAULT_UDP_PORT "7523"
+#define DEFAULT_TCP_PORT "7527"
+#define DEFAULT_UDP_PORT "8527"
 #define DEFAULT_PORT     "7667"
-#define DEFAULT_TCP_PORT_ADMIN_SERVER "8523"
+#define DEFAULT_TCP_PORT_ADMIN_SERVER "9526"
 
 #define GAME_PATH "tpf_unix_sock.game"
 #define CHAT_PATH "tpf_unix_sock.chat"
 
-#define DEFAULT_HOSTNAME "127.0.0.1"
+#define DEFAULT_HOSTNAME "10.0.0.145"
 #define MAX_TCP_CLIENTS 100
 #define MAX_CLIENTS 1000
 typedef struct {
@@ -76,6 +76,7 @@ typedef struct {
     uint16_t client_id;
     uint64_t last_packet_no;
     int tcp_socket;
+    int udp_socket;
     struct sockaddr_in * udp_address;
     socklen_t udp_adr_len;
     bool has_client_entity;
@@ -96,6 +97,8 @@ typedef struct {
     bullet_node * bulletList;
     connection * connections[MAX_CLIENTS];
     uint64_t last_packet_no;
+    int tcp_socket;
+    int udp_socket;
 } server_info;
 
 typedef struct {
