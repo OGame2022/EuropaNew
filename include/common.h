@@ -23,13 +23,16 @@
 #include <stdint.h>
 
 
-#define DEFAULT_TCP_PORT "7527"
-#define DEFAULT_UDP_PORT "8527"
+#define DEFAULT_TCP_PORT "7528"
+#define DEFAULT_UDP_PORT "8528"
 #define DEFAULT_PORT     "7667"
-#define DEFAULT_TCP_PORT_ADMIN_SERVER "9526"
+#define DEFAULT_TCP_PORT_ADMIN_SERVER "9528"
 
-#define GAME_PATH "tpf_unix_sock.game"
-#define CHAT_PATH "tpf_unix_sock.chat"
+#define LISTEN_PATH "tpf_unix_sock.listen"
+#define CLOCK_PATH "tpf_unix_sock.clock"
+
+#define LISTEN_PATH_CLIENT "tpf_unix_sock.listen_client"
+#define CLOCK_PATH_CLIENT "tpf_unix_sock.clock_client"
 
 #define DEFAULT_HOSTNAME "127.0.0.1"
 #define MAX_TCP_CLIENTS 100
@@ -53,10 +56,6 @@ typedef struct {
     client_input_state inputState;
 } client;
 
-typedef struct {
-    const char * server_path;
-    const char * client_path;
-} ipc_path_pair;
 
 typedef struct {
     uint16_t shooters_id;

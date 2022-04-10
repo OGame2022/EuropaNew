@@ -30,7 +30,7 @@
 #include "ncurses_client.h"
 #include "network_util.h"
 #include "types.h"
-
+#include "clock_thread_ipc.h"
 static volatile sig_atomic_t           exit_flag;
 static int                             sent     = 0;
 static int                             received = 0;
@@ -222,10 +222,33 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     printf("client id %hu\n", client_id);
 
     // 100 ticks/s
-    const struct timeval tick_rate = {0, 10000};
-    struct timeval       timeout;
-    timeout.tv_sec                = tick_rate.tv_sec;
-    timeout.tv_usec               = tick_rate.tv_usec;
+//    const struct timeval tick_rate = {0, 10000};
+//    struct timeval       timeout;
+//    timeout.tv_sec                = tick_rate.tv_sec;
+//    timeout.tv_usec               = tick_rate.tv_usec;
+
+    ipc_path_pair ipcPathPair = {
+            LISTEN_PATH_CLIENT,
+            CLOCK_PATH_CLIENT
+    };
+
+    struct timespec tick_rate = {
+            0,
+            10000000
+    };
+
+    struct clock_thread_args clockThreadArgs = {
+            &ipcPathPair,
+            &tick_rate
+    };
+    //clock socket
+    int clock_main_socket = create_unix_stream_socket(ipcPathPair.listen_path);
+
+    pthread_t clock_thread;
+    printf("Starting clock thread\n");
+    pthread_create(&clock_thread, NULL, (void *(*)(void *)) clock_thread_socket, &clockThreadArgs);
+    int clock_listen_socket = accept_ipc_connection(clock_main_socket);
+
 
     client_info *clientInfo       = calloc(1, sizeof(client_info));
 
@@ -245,16 +268,20 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     fd_set readfds;
     while(!exit_flag)
     {
-        if(timeout.tv_usec == 0)
-        {
-            timeout.tv_usec = tick_rate.tv_usec;
-            //            printf("putting out packet %lu\n", clientInfo->last_packet_sent + 1);
-            send_game_state(clientInfo, udp_server_sd);
-            sent++;
-        }
+//        if(timeout.tv_usec == 0)
+//        {
+//            timeout.tv_usec = tick_rate.tv_usec;
+//            //            printf("putting out packet %lu\n", clientInfo->last_packet_sent + 1);
+//            send_game_state(clientInfo, udp_server_sd);
+//            sent++;
+//        }
         FD_ZERO(&readfds);
         FD_SET(udp_server_sd, &readfds);
         FD_SET(tcp_server_socket, &readfds);
+
+        FD_SET(clock_listen_socket, &readfds);
+
+
         // FD_SET(STDIN_FILENO, &readfds);
 
         int maxfd = udp_server_sd;
@@ -262,13 +289,24 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
         {
             maxfd = udp_server_sd;
         }
+        if (clock_listen_socket > maxfd) {
+            maxfd = clock_listen_socket;
+        }
         // printf("select\n");
         //    the big select statement
-        if(select(maxfd + 1, &readfds, NULL, NULL, &timeout) > 0)
+        if(select(maxfd + 1, &readfds, NULL, NULL, NULL) > 0)
         {
             //                        if(FD_ISSET(STDIN_FILENO, &readfds)) {
             //                                exitFlag = true;
             //                        }
+
+            if(FD_ISSET(clock_listen_socket, &readfds)) {
+                send_game_state(clientInfo, udp_server_sd);
+                sent++;
+                //TODO: modify this to read as many times as necessary to clear the buffer
+                read_packet_from_unix_socket(clock_listen_socket);
+
+            }
 
             // check for udp messages
             if(FD_ISSET(udp_server_sd, &readfds))

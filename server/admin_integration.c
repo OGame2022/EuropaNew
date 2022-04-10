@@ -94,7 +94,6 @@ char * write_user_list_to_string(const struct dc_posix_env *env, struct dc_error
         if (serverInfo->connections[i]->udp_address) {
             inet_ntop(AF_INET, serverInfo->connections[i]->udp_address, clientAddress, INET_ADDRSTRLEN);
             dc_strcat(env, buffer, clientAddress);
-
         } else {
             dc_strcat(env, buffer, "N/A");
         }
