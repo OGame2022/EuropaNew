@@ -32,8 +32,6 @@
 #include "types.h"
 #include "clock_thread_ipc.h"
 static volatile sig_atomic_t           exit_flag;
-static int                             sent     = 0;
-static int                             received = 0;
 
 static struct dc_application_settings *create_settings(const struct dc_posix_env *env, struct dc_error *err)
 {
@@ -162,7 +160,6 @@ int main(int argc, char *argv[])
     dc_application_info_destroy(&env, &info);
     dc_error_reset(&err);
     endwin();
-    printf("sent: %d\nreceived: %d\n", sent, received);
 
     return ret_val;
 }
@@ -302,7 +299,6 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
 
             if(FD_ISSET(clock_listen_socket, &readfds)) {
                 send_game_state(clientInfo, udp_server_sd);
-                sent++;
                 //TODO: modify this to read as many times as necessary to clear the buffer
                 read_packet_from_unix_socket(clock_listen_socket);
 
@@ -311,7 +307,6 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
             // check for udp messages
             if(FD_ISSET(udp_server_sd, &readfds))
             {
-                received++;
                 receive_udp_packet(env, err, clientInfo);
             }
 
