@@ -11,7 +11,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <bits/types/sigevent_t.h>
+//#include <bits/types/sigevent_t.h> // this is not portable + no usage of sigevent, just signals
+#include <signal.h>
 
 #ifndef STIRLING_GAME_DEMO_CLOCK_H
 #define STIRLING_GAME_DEMO_CLOCK_H
