@@ -25,6 +25,7 @@
 #include <dc_util/types.h>
 #include <getopt.h>
 #include <inttypes.h>
+#include <netinet/in.h>
 #include <sys/fcntl.h>
 #include <signal.h>
 #include <sys/select.h>
