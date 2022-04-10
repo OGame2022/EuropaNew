@@ -31,7 +31,7 @@
 #define GAME_PATH "tpf_unix_sock.game"
 #define CHAT_PATH "tpf_unix_sock.chat"
 
-#define DEFAULT_HOSTNAME "10.0.0.145"
+#define DEFAULT_HOSTNAME "127.0.0.1"
 #define MAX_TCP_CLIENTS 100
 #define MAX_CLIENTS 1000
 typedef struct {
