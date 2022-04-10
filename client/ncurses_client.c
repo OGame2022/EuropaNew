@@ -49,6 +49,7 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
 
     settings->opts.parent.config_path = dc_setting_path_create(env, err);
     settings->server_ip               = dc_setting_string_create(env, err);
+    settings->server_hostname         = dc_setting_string_create(env, err);
     settings->server_udp_port         = dc_setting_uint16_create(env, err);
     settings->server_tcp_port         = dc_setting_uint16_create(env, err);
     struct options opts[]             = {{(struct dc_setting *)settings->opts.parent.config_path,
@@ -70,7 +71,17 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
                               dc_string_from_string,
                               "server_ip",
                               dc_string_from_config,
-                              DEFAULT_HOSTNAME},
+                              DEFAULT_IP_VERSION},
+                             {(struct dc_setting *)settings->server_hostname,
+                                 dc_options_set_string,
+                                 "server_hostname",
+                                 required_argument,
+                                 'h',
+                                 "SERVER_HOSTNAME",
+                                 dc_string_from_string,
+                                 "server_hostname",
+                                 dc_string_from_config,
+                                 DEFAULT_HOSTNAME},
                              {(struct dc_setting *)settings->server_udp_port,
                               dc_options_set_uint16,
                               "server_udp_port",
@@ -104,6 +115,9 @@ static struct dc_application_settings *create_settings(const struct dc_posix_env
     return (struct dc_application_settings *)settings;
 }
 
+int create_udp_socket(const struct dc_posix_env *env, struct dc_error *err, const char *hostname, uint16_t server_udp_port,
+                  const char *ip_version);
+
 static int destroy_settings(const struct dc_posix_env               *env,
                             __attribute__((unused)) struct dc_error *err,
                             struct dc_application_settings         **psettings)
@@ -113,6 +127,7 @@ static int destroy_settings(const struct dc_posix_env               *env,
     DC_TRACE(env);
     app_settings = (struct application_settings *)*psettings;
     dc_setting_string_destroy(env, &app_settings->server_ip);
+    dc_setting_string_destroy(env, &app_settings->server_hostname);
     dc_setting_uint16_destroy(env, &app_settings->server_tcp_port);
     dc_setting_uint16_destroy(env, &app_settings->server_udp_port);
     dc_free(env, app_settings->opts.opts, app_settings->opts.opts_count);
@@ -178,9 +193,9 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     // TCP
     int tcp_server_socket = connect_to_tcp_server(env,
                                                   err,
-                                                  dc_setting_string_get(env, app_settings->server_ip),
+                                                  dc_setting_string_get(env, app_settings->server_hostname),
                                                   dc_setting_uint16_get(env, app_settings->server_tcp_port),
-                                                  DEFAULT_IP_VERSION);
+                                                  dc_setting_string_get(env, app_settings->server_ip));
     if(dc_error_has_error(err) || tcp_server_socket <= 0)
     {
         printf("could not connect to TCP socket\n");
@@ -188,20 +203,11 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     }
 
     // UDP:
-    struct sockaddr_in udp_server_addr;
-    socklen_t          server_struct_length = sizeof(struct sockaddr_in);
-    const int          udp_server_sd        = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-    if(udp_server_sd < 0)
-    {
-        printf("Error while creating socket\n");
-        return -1;
-    }
-    printf("Socket created successfully\n");
-    // Set port and IP:
-    udp_server_addr.sin_family      = AF_INET;
-    udp_server_addr.sin_port        = htons(dc_setting_uint16_get(env, app_settings->server_udp_port));
-    udp_server_addr.sin_addr.s_addr = inet_addr(dc_setting_string_get(env, app_settings->server_ip));
+    int udp_server_sd = create_udp_socket(env,
+                                          err,
+                                          dc_setting_string_get(env, app_settings->server_hostname),
+                                          dc_setting_uint16_get(env, app_settings->server_udp_port),
+                                          dc_setting_string_get(env, app_settings->server_ip));
 
     // Clean buffers:
     uint8_t id_packet[2];
@@ -255,8 +261,6 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
     clientInfo->client_id         = client_id;
     clientInfo->udp_socket        = udp_server_sd;
     clientInfo->tcp_socket        = tcp_server_socket;
-    clientInfo->udp_address       = &udp_server_addr;
-    clientInfo->udp_adr_len       = server_struct_length;
     clientInfo->has_client_entity = true;
     clientInfo->client_entity     = calloc(1, sizeof(client));
 
@@ -333,6 +337,7 @@ static int run(const struct dc_posix_env *env, struct dc_error *err, struct dc_a
 
     return EXIT_SUCCESS;
 }
+
 
 static void receive_udp_packet(const struct dc_posix_env *env, struct dc_error *err, client_info *clientInfo)
 {
@@ -487,7 +492,7 @@ static void send_game_state(client_info *clientInfo, int udp_socket)
         //                packet[13] = clientInfo->client_entity->position_y >> 8;
     }
 
-    if(sendto(udp_socket, packet, 11, 0, (const struct sockaddr *)clientInfo->udp_address, clientInfo->udp_adr_len) < 0)
+    if(send(udp_socket, packet, 11, 0) < 0)
     {
         printf("Unable to send message\n");
         exit(1);
@@ -509,17 +514,6 @@ static void trace_reporter(__attribute__((unused)) const struct dc_posix_env *en
     fprintf(stdout, "TRACE: %s : %s : @ %zu\n", file_name, function_name, line_number);
 }
 
-size_t get_time_difference(int future_hour, int future_minute, int current_hour, int current_min, int current_seconds)
-{
-    int seconds_future     = future_hour * 3600 + future_minute * 60;
-    int seconds_current    = current_hour * 3600 + current_min * 60 + current_seconds;
-    int seconds_difference = (seconds_future - seconds_current);
-    if(seconds_difference < 0)
-    {
-        seconds_difference += 86400;
-    }
-    return (size_t)seconds_difference;
-}
 
 void *ncurses_thread(client_info *clientInfo)
 {
