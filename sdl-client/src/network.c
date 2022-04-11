@@ -68,7 +68,7 @@ int init_game_socket()
     memset(&hints, 0, sizeof(hints));
     hints.ai_socktype = SOCK_DGRAM;
 
-    if (getaddrinfo("127.0.0.1", "8528", &hints, &peer_address))
+    if (getaddrinfo("127.0.0.1", "8529", &hints, &peer_address))
     {
         fprintf(stderr, "getaddrinfo() failed. (%d)\n", GETSOCKETERRNO());
         return 1;
@@ -104,7 +104,7 @@ int init_tcp_connection()
     printf("Configuring remote address...\n");
     memset(&hints, 0, sizeof(hints));
     hints.ai_socktype = SOCK_STREAM;
-    if (getaddrinfo("127.0.0.1", "7528", &hints, &peer_address_tcp))
+    if (getaddrinfo("127.0.0.1", "7529", &hints, &peer_address_tcp))
     {
         fprintf(stderr, "getaddrinfo() failed. (%d)\n", GETSOCKETERRNO());
         return 1;
