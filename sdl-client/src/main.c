@@ -11,10 +11,10 @@ int main(int argc, char *argv[])
     init_connection();
     while (1)
     {
-        while (receive_udp_packet() != 1)
-            ;;
-        // get input
-        // send input
+        handle_gamepacket();
+        doInput();
+
+        send_input();
         prepareScene();
         // draw shit
         presentScene();

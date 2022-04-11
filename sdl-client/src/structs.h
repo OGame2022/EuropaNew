@@ -93,3 +93,10 @@ typedef struct
     Entity fighterHead, *fighterTail;
     Entity bulletHead, *bulletTail;
 } Stage;
+
+typedef struct
+{
+    uint16_t num_entities;
+    uint16_t num_bullets;
+
+} gamestate;
