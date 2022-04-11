@@ -16,12 +16,10 @@ int main(int argc, char *argv[])
     {
         handle_gamepacket();
         doInput();
-
         send_input();
         prepareScene();
         draw();
         presentScene();
-
         capFrameRate(&then, &remainder);
     }
 

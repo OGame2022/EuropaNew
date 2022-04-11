@@ -23,6 +23,8 @@
 #define SIDE_PLAYER 0
 #define SIDE_ALIEN 1
 
+#define HEADER_SIZE 12
+
 #define MAX_KEYS 10
 #define KEY_UP 0
 #define KEY_DOWN 1

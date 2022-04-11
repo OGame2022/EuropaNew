@@ -23,7 +23,6 @@ void handle_gamepacket(void)
     {
         process_game_state(gamestate_buf);
     }
-    printf("num bullies %d\n", state.num_bullets);
 }
 
 void send_input()
@@ -203,6 +202,5 @@ int  receive_udp_packet(char *buffer)
         memset(buffer, 0 , 4096);
         return 1;
     }
-    printf("%zd\n", count);
     return 0;
 }
