@@ -33,6 +33,11 @@
 #include "clock_thread_ipc.h"
 static volatile sig_atomic_t           exit_flag;
 
+static WINDOW * game_window;
+static WINDOW * chat_window;
+
+
+
 static struct dc_application_settings *create_settings(const struct dc_posix_env *env, struct dc_error *err)
 {
     struct application_settings *settings;
@@ -515,13 +520,21 @@ void *ncurses_thread(client_info *clientInfo)
     printf("thread started\n");
     int key = 0;
 
+//    game_window = newwin(20, 80, 0, 0);
+//    box(game_window, 0 , 0);
+//    wrefresh(game_window);
+//
+//    chat_window = newwin(0, 20, 30, 80);
+//    box(chat_window, 0 , 0);
+//    wrefresh(chat_window);
+
     // THIS CODE IS MODIFIED FROM LIAM'S DEMO
     initscr();            /* initialize ncurses screen */
     noecho();             /* disable rendering text on input */
     keypad(stdscr, TRUE); /* allow input from special keys */
     curs_set(0);          /* make cursor invisible */
     cbreak();             /* enables intant input */
-    //draw_game(clientInfo);
+    draw_game(clientInfo);
 
     // printw("\n");
     // mvaddch(1, 1, '0');
@@ -532,11 +545,10 @@ void *ncurses_thread(client_info *clientInfo)
         // mvprintw(0, 20, "key: %c x: %d y: %d", key,
         // clientInfo->client_entity->position_x,
         // clientInfo->client_entity->position_y);
-
+        char line[1000];
         switch(key)
         {
             case MOVE_UP:
-                printw("up:");
                 clientInfo->clientInputState.move_up = true;
                 break;
             case MOVE_LEFT:
@@ -560,6 +572,18 @@ void *ncurses_thread(client_info *clientInfo)
             case KEY_RIGHT:
                 clientInfo->clientInputState.shoot_right = true;
                 break;
+//            case KEY_ENTER:
+//                echo();
+//                curs_set(1);
+//                move(30, 0);
+//
+//                refresh();
+//                getstr(line);
+//                printw(line);
+//                noecho();
+//                curs_set(0);
+//                refresh();
+//                break;
             default:
                 break;
         }
@@ -641,16 +665,6 @@ void draw_game(client_info *clientInfo)
     refresh();
 }
 
-void move_player(client *client_entity, int direction_x, int direction_y)
-{
-    if((client_entity->position_x == 0 && direction_x < 0) || (client_entity->position_x == 50 && direction_x > 0) ||
-       (client_entity->position_y == 0 && direction_y < 0) || (client_entity->position_y == 50 && direction_y > 0))
-    {
-        return;
-    }
-    client_entity->position_x += direction_x;
-    client_entity->position_y += direction_y;
-}
 
 void signal_handler(__attribute__((unused)) int signnum)
 {

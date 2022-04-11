@@ -419,8 +419,8 @@ static void process_game_state(server_info *serverInfo) {
             } else if (validate_user_position(current_client->position_x, new_y)) {
                 current_client->position_y = new_y;
             } else if (!validate_user_position(current_client->position_x, current_client->position_y)) {
-                current_client->position_x = 0;
-                current_client->position_y = 0;
+                current_client->position_x = SPAWN_X;
+                current_client->position_y = SPAWN_Y;
             }
             if (current_client->inputState.shoot_up || current_client->inputState.shoot_down || current_client->inputState.shoot_left || current_client->inputState.shoot_right) {
                 // player will shoot a bullet this tick
@@ -494,8 +494,8 @@ static void process_game_state(server_info *serverInfo) {
             while (bulletNode) {
                 if (bulletNode->bullet->position_x == x && bulletNode->bullet->position_y == y) {
                     if (bulletNode->bullet->shooters_id != client_id) {
-                        current_client->position_x = 0;
-                        current_client->position_y = 0;
+                        current_client->position_x = SPAWN_X;
+                        current_client->position_y = SPAWN_Y;
                     }
                     if (bulletNode_prev == NULL) {
                         serverInfo->bulletList = bulletNode->next;
@@ -519,7 +519,7 @@ static void process_game_state(server_info *serverInfo) {
 
 
 bool validate_user_position(uint16_t x, uint16_t y) {
-    if (x > 50 || y > 50) {
+    if (x > GAME_HEIGHT || y > GAME_WIDTH) {
         return false;
     }
     return true;
@@ -739,6 +739,8 @@ receive_udp_packet(const struct dc_posix_env *env, struct dc_error *err, server_
         client_conn->has_client_entity = true;
         client_conn->client_entity = calloc(1, sizeof(client));
         client_conn->client_entity->client_id = client_id;
+        client_conn->client_entity->position_x = SPAWN_X;
+        client_conn->client_entity->position_y = SPAWN_Y;
     }
     memcpy(&client_conn->client_entity->inputState, &packet_inputs, sizeof(client_input_state));
 

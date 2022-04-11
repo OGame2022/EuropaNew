@@ -38,6 +38,10 @@
 #include "admin_integration.h"
 #include "clock_thread_ipc.h"
 
+#define GAME_HEIGHT 50
+#define GAME_WIDTH 150
+#define SPAWN_Y 75
+#define SPAWN_X 25
 struct application_settings
 {
     struct dc_opt_settings opts;
