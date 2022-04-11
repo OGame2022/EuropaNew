@@ -1,0 +1,13 @@
+#include "SDL2/SDL.h"
+#include "ctype.h"
+#include "defs.h"
+#include "math.h"
+#include "stdio.h"
+#include "stdlib.h"
+#include "string.h"
+#include "structs.h"
+#include <netdb.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <stdbool.h>

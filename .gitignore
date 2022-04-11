@@ -642,5 +642,5 @@ FodyWeavers.xsd
 
 ### VisualStudio Patch ###
 # Additional files built by Visual Studio
-
+build/
 # End of https://www.toptal.com/developers/gitignore/api/linux,macos,windows,intellij+all,visualstudiocode,visualstudio,emacs,cmake,valgrind
