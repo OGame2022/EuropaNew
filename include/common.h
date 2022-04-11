@@ -37,6 +37,10 @@
 #define DEFAULT_HOSTNAME "127.0.0.1"
 #define MAX_TCP_CLIENTS 100
 #define MAX_CLIENTS 1000
+
+#define MAX_WIDTH 512
+#define MAX_HEIGHT 512
+#define PLAYER_SPEED 4
 typedef struct {
     bool move_up;
     bool move_down;
@@ -53,6 +57,8 @@ typedef struct {
     uint16_t client_id;
     uint16_t position_x;
     uint16_t position_y;
+    int dx;
+    int dy;
     client_input_state inputState;
 } client;
 

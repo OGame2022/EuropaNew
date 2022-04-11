@@ -398,6 +398,7 @@ static void process_game_state(server_info *serverInfo) {
             uint16_t new_x = current_client->position_x;
             uint16_t new_y = current_client->position_y;
             // move player based off input state;
+            // move player based off input state;
             if (current_client->inputState.move_up) {
                 new_x--;
             }
@@ -519,7 +520,7 @@ static void process_game_state(server_info *serverInfo) {
 
 
 bool validate_user_position(uint16_t x, uint16_t y) {
-    if (x > 50 || y > 50) {
+    if (x > MAX_WIDTH || y > MAX_HEIGHT) {
         return false;
     }
     return true;
