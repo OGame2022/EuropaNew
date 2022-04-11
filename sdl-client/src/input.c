@@ -91,6 +91,9 @@ void play_bullet_sound(void) {
     SDL_AudioSpec WAV_spec;
     uint32_t WAV_length;
     uint8_t *WAV_buffer;
-
     SDL_LoadWAV("../gfx/Sound_userShoot.wav", &WAV_spec, &WAV_buffer, &WAV_length);
+
+    SDL_AudioDeviceID audio_device_ID = SDL_OpenAudioDevice(NULL, 0, &WAV_spec, NULL, 0);
+    SDL_QueueAudio(audio_device_ID, WAV_buffer, WAV_length);
+    SDL_PauseAudioDevice(audio_device_ID, 0);
 }
