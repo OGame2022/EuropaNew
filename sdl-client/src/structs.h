@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <unistd.h>
+#include <sys/socket.h>
 
 typedef struct Entity Entity;
 
