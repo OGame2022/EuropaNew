@@ -19,13 +19,13 @@ Europa is a multiplayer free-for-all game set in the alien world of Europa. Play
 
 # Protocol
 
-The protocol consists of a canonical game state maintained by a central server which sends this state out to clients at a constant tick rate of 100 times per second at exactly 100 millisecond intervals.
+The protocol consists of a canonical game state maintained by a central server which sends this state out to clients at a constant tick rate of 100 times per second at exactly 10 millisecond intervals.
 
 Clients send updates to the server at the same tick rate.
 
 ## Serverbound
 
-A client must send the <code>serverbound</code> packet to the game server every 100 ms.
+A client must send the <code>serverbound</code> packet to the game server every 10 ms.
 
 The <code>serverbound</code> packet has this structure:
 
@@ -46,7 +46,7 @@ serverbound {
 
 ## Clientbound
 
-The server must send the <code>clientbound</code> packet to each client every 100 ms.
+The server must send the <code>clientbound</code> packet to each client every 10 ms.
 
 The <code>clientbound</code> packet has this structure:
 
