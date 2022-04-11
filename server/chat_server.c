@@ -4,7 +4,7 @@
 
 #include "chat_server.h"
 
-void *run_chat_server(const char * hostname, in_port_t tcp_port, in_port_t udp_port, const char * ip_version) {
+void *run_chat_server(struct chat_server_args * chatServerArgs) {
 
 
     return 0;

@@ -25,6 +25,7 @@
 #include <dc_util/types.h>
 #include <getopt.h>
 #include <inttypes.h>
+#include <netinet/in.h>
 #include <sys/fcntl.h>
 #include <signal.h>
 #include <sys/select.h>
@@ -34,5 +35,5 @@ int create_tcp_server(const struct dc_posix_env *env, struct dc_error *err, cons
 int connect_to_tcp_server(const struct dc_posix_env *env, struct dc_error *err, const char *hostname, in_port_t port, const char * ip_version);
 
 int create_udp_server(const struct dc_posix_env *env, struct dc_error *err, const char *hostname, in_port_t port, const char * ip_version);
-
+int create_udp_socket(const struct dc_posix_env *env, struct dc_error *err, const char *hostname, in_port_t server_udp_port, const char *ip_version);
 #endif //STIRLING_GAME_DEMO_NETWORK_UTIL_H

@@ -17,6 +17,7 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 //includes from tutorial
 #include <sys/socket.h>
 #include <arpa/inet.h>

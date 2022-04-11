@@ -233,3 +233,79 @@ int create_udp_server(const struct dc_posix_env *env, struct dc_error *err, cons
     printf("Listening for incoming udp messages on port %d\n", port);
     return udp_server_sd;
 }
+
+int create_udp_socket(const struct dc_posix_env *env, struct dc_error *err, const char *host_name, in_port_t server_udp_port, const char *ip_version) {
+    struct addrinfo hints;
+    struct addrinfo *result;
+
+    dc_memset(env, &hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_CANONNAME;
+
+    if (dc_strcmp(env, ip_version, "IPv4") == 0) {
+        hints.ai_family = AF_INET;
+    } else {
+        if (dc_strcmp(env, ip_version, "IPv6") == 0) {
+            hints.ai_family = AF_INET6;
+        } else {
+            DC_ERROR_RAISE_USER(err, "Invalid ip_version", -1);
+            hints.ai_family = 0;
+        }
+    }
+
+    dc_getaddrinfo(env, err, host_name, NULL, &hints, &result);
+
+    if(dc_error_has_no_error(err))
+    {
+        int socket_fd;
+
+        socket_fd = dc_socket(env, err, result->ai_family, result->ai_socktype, result->ai_protocol);
+
+        if(dc_error_has_no_error(err))
+        {
+            struct sockaddr *sockaddr;
+            in_port_t converted_port;
+            socklen_t sockaddr_size;
+
+            sockaddr = result->ai_addr;
+            converted_port = htons(server_udp_port);
+
+            if(sockaddr->sa_family == AF_INET)
+            {
+                struct sockaddr_in *addr_in;
+
+                addr_in = (struct sockaddr_in *)sockaddr;
+                addr_in->sin_port = converted_port;
+                sockaddr_size = sizeof(struct sockaddr_in);
+            }
+            else
+            {
+                if(sockaddr->sa_family == AF_INET6)
+                {
+                    struct sockaddr_in6 *addr_in;
+
+                    addr_in = (struct sockaddr_in6 *)sockaddr;
+                    addr_in->sin6_port = converted_port;
+                    sockaddr_size = sizeof(struct sockaddr_in6);
+                }
+                else
+                {
+                    DC_ERROR_RAISE_USER(err, "sockaddr->sa_family is invalid", -1);
+                    sockaddr_size = 0;
+                }
+            }
+
+            if(dc_error_has_no_error(err))
+            {
+                dc_connect(env, err, socket_fd, sockaddr, sockaddr_size);
+
+                if(dc_error_has_no_error(err))
+                {
+                    return socket_fd;
+                }
+            }
+        }
+        return -1;
+    }
+    return -1;
+}

@@ -21,12 +21,12 @@
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <ncurses.h>
 
-
-#define DEFAULT_TCP_PORT "7528"
-#define DEFAULT_UDP_PORT "8528"
+#define DEFAULT_TCP_PORT "7529"
+#define DEFAULT_UDP_PORT "8529"
 #define DEFAULT_PORT     "7667"
-#define DEFAULT_TCP_PORT_ADMIN_SERVER "9528"
+#define DEFAULT_TCP_PORT_ADMIN_SERVER "9529"
 
 #define LISTEN_PATH "tpf_unix_sock.listen"
 #define CLOCK_PATH "tpf_unix_sock.clock"
@@ -107,12 +107,11 @@ typedef struct {
     uint64_t last_packet_received;
     int tcp_socket;
     int udp_socket;
-    struct sockaddr_in * udp_address;
-    socklen_t udp_adr_len;
     bool has_client_entity;
     client * client_entity;
     client_input_state clientInputState;
     bullet_node * bulletList;
+
 } client_info;
 
 static int display(const char *str);
