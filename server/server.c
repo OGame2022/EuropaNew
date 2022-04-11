@@ -738,6 +738,7 @@ receive_udp_packet(const struct dc_posix_env *env, struct dc_error *err, server_
     if (!client_conn->has_client_entity) {
         client_conn->has_client_entity = true;
         client_conn->client_entity = calloc(1, sizeof(client));
+        client_conn->client_id = client_id;
     }
     memcpy(&client_conn->client_entity->inputState, &packet_inputs, sizeof(client_input_state));
 
