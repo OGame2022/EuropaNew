@@ -13,6 +13,7 @@ extern void init_connection(void);
 extern int networkThread(void *ptr);
 extern void handle_gamepacket(void);
 extern void send_input(void);
+extern void init_stage(void);
 extern Entity *player;
 extern client_info *clientInfo;
 gamestate state;

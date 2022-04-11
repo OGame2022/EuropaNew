@@ -11,6 +11,58 @@ void init_connection()
     init_game_socket();
     get_id_from_server();
 }
+
+void handle_gamepacket(void)
+{
+    uint8_t gamestate_buf[4096];
+    memset(gamestate_buf, 0, 4096);
+    while(receive_udp_packet(gamestate_buf) != 1)
+        ;
+
+    if (gamestate_buf != NULL)
+    {
+        process_game_state(gamestate_buf);
+    }
+    printf("num bullies %d\n", state.num_bullets);
+}
+
+void send_input()
+{
+    uint8_t packet[11];
+    memset(packet, 0 , 11);
+    uint64_t packet_no = ++ clientInfo->last_packet_sent;
+
+    for(int i = 0; i < 8; i++) {
+        packet[i] = (uint8_t) ((packet_no >> 8 * (7 - i)) & 0xFF);
+    }
+    packet[8] = clientInfo->client_id & 0xFF;
+    packet[9] = clientInfo-> client_id >> 8;
+
+    if(clientInfo->client_entity)
+    {
+
+        uint8_t packed_byte = 0;
+        packed_byte |= (clientInfo->clientInputState.move_up << 0);
+        packed_byte |= (clientInfo->clientInputState.move_down << 1);
+        packed_byte |= (clientInfo->clientInputState.move_left << 2);
+        packed_byte |= (clientInfo->clientInputState.move_right << 3);
+        packed_byte |= (clientInfo->clientInputState.shoot_up << 4);
+        packed_byte |= (clientInfo->clientInputState.shoot_down << 5);
+        packed_byte |= (clientInfo->clientInputState.shoot_left << 6);
+        packed_byte |= (clientInfo->clientInputState.shoot_right << 7);
+        packet[10] = packed_byte;
+    }
+
+    if(sendto(clientInfo->udp_socket, packet, 11, 0,
+              peer_address->ai_addr, peer_address->ai_addrlen ) < 0)
+    {
+        printf("Unable to send message\n");
+        fprintf(stderr, "%s\n", strerror(errno));
+        exit(1);
+    }
+
+}
+
 int init_game_socket()
 {
     SOCKET temp;
@@ -32,7 +84,7 @@ int init_game_socket()
     printf("%s %s\n", address_buffer, service_buffer);
 
     temp = socket(peer_address->ai_family, peer_address->ai_socktype,
-                         peer_address->ai_protocol);
+                  peer_address->ai_protocol);
     if (!ISVALIDSOCKET(temp))
     {
         fprintf(stderr, "socket() failed. (%d)\n", GETSOCKETERRNO());
@@ -69,7 +121,7 @@ int init_tcp_connection()
     printf("Creating socket...\n");
 
     temp = socket(peer_address_tcp->ai_family, peer_address_tcp->ai_socktype,
-                         peer_address_tcp->ai_protocol);
+                  peer_address_tcp->ai_protocol);
     if (!ISVALIDSOCKET(temp))
     {
         fprintf(stderr, "socket() failed. (%d)\n", GETSOCKETERRNO());
@@ -163,114 +215,4 @@ int  receive_udp_packet(char *buffer)
     }
     printf("%zd\n", count);
     return 0;
-}
-
-void handle_gamepacket(void)
-{
-    char gamestate_buf[4096];
-    memset(gamestate_buf, 0, 4096);
-    while(receive_udp_packet(gamestate_buf) != 1)
-        ;
-
-    if (gamestate_buf != NULL)
-    {
-        process_game_state(gamestate_buf);
-    }
-}
-
-void send_input()
-{
-
-    uint8_t packet[11];
-    memset(packet, 0 , 11);
-    uint64_t packet_no = ++ clientInfo->last_packet_sent;
-
-    for(int i = 0; i < 8; i++) {
-        packet[i] = (uint8_t) ((packet_no >> 8 * (7 - i)) & 0xFF);
-    }
-    packet[8] = clientInfo->client_id & 0xFF;
-    packet[9] = clientInfo-> client_id >> 8;
-
-    if(clientInfo->client_entity)
-    {
-
-        uint8_t packed_byte = 0;
-        packed_byte |= (clientInfo->clientInputState.move_up << 0);
-        packed_byte |= (clientInfo->clientInputState.move_down << 1);
-        packed_byte |= (clientInfo->clientInputState.move_left << 2);
-        packed_byte |= (clientInfo->clientInputState.move_right << 3);
-        packed_byte |= (clientInfo->clientInputState.shoot_up << 4);
-        packed_byte |= (clientInfo->clientInputState.shoot_down << 5);
-        packed_byte |= (clientInfo->clientInputState.shoot_left << 6);
-        packed_byte |= (clientInfo->clientInputState.shoot_right << 7);
-        packet[10] = packed_byte;
-    }
-
-    if(sendto(clientInfo->udp_socket, packet, 11, 0,
-              peer_address->ai_addr, peer_address->ai_addrlen ) < 0)
-    {
-        printf("Unable to send message\n");
-        fprintf(stderr, "%s\n", strerror(errno));
-        exit(1);
-    }
-
-}
-
-void fill_entities_list(client_node **entities_list, const uint8_t *entity_buffer, uint16_t num_entities)
-{
-    size_t shift = 0;
-    for(uint16_t entity_no = 0; entity_no < num_entities; ++entity_no)
-    {
-        client *new_entity     = calloc(1, sizeof(client));
-        new_entity->client_id  = (uint16_t)(entity_buffer[0 + shift] | (uint16_t)entity_buffer[1 + shift] << 8);
-        new_entity->position_x = (uint16_t)(entity_buffer[2 + shift] | (uint16_t)entity_buffer[3 + shift] << 8);
-        new_entity->position_y = (uint16_t)(entity_buffer[4 + shift] | (uint16_t)entity_buffer[5 + shift] << 8);
-        shift += 6;
-        client_node *clientNode   = calloc(1, sizeof(client_node));
-        clientNode->client_entity = new_entity;
-        clientNode->next          = *entities_list;
-        *entities_list            = clientNode;
-    }
-}
-
-void free_client_entities_list(client_node **head)
-{
-    client_node *node = *head;
-    while(node)
-    {
-        free(node->client_entity);
-        client_node *temp = node->next;
-        free(node);
-        node = temp;
-    }
-    *head = NULL;
-}
-
-void fill_bullet_list(bullet_node **bullet_list, const uint8_t *entity_buffer, uint16_t num_bullets)
-{
-    size_t shift = 0;
-    for(uint16_t entity_no = 0; entity_no < num_bullets; ++entity_no)
-    {
-        bullet *new_entity     = calloc(1, sizeof(bullet));
-        new_entity->position_x = (uint16_t)(entity_buffer[0 + shift] | (uint16_t)entity_buffer[1 + shift] << 8);
-        new_entity->position_y = (uint16_t)(entity_buffer[2 + shift] | (uint16_t)entity_buffer[3 + shift] << 8);
-        shift += 4;
-        bullet_node *bulletNode = calloc(1, sizeof(bullet_node));
-        bulletNode->bullet      = new_entity;
-        bulletNode->next        = *bullet_list;
-        *bullet_list            = bulletNode;
-    }
-}
-
-void free_bullet_list(bullet_node **head)
-{
-    bullet_node *node = *head;
-    while(node)
-    {
-        free(node->bullet);
-        bullet_node *temp = node->next;
-        free(node);
-        node = temp;
-    }
-    *head = NULL;
 }

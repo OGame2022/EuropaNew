@@ -38,6 +38,7 @@ typedef struct {
     uint16_t position_x;
     uint16_t position_y;
     client_input_state inputState;
+    SDL_Texture *texture;
 } client;
 
 typedef struct {

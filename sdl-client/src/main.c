@@ -9,6 +9,7 @@ int main(int argc, char *argv[])
     atexit(cleanup);
     then = SDL_GetTicks();
     init_connection();
+    init_stage();
     while (1)
     {
         handle_gamepacket();
