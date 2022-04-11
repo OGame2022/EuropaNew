@@ -1,0 +1,107 @@
+<pre class='metadata'>
+Title: Europa Specification v4.0
+Status: LS
+ED: none
+Shortname: eruopa_v4.0
+Level: none
+Editor: to be removed
+Abstract: This specification describes the game Europa as well as its required behavior.
+Boilerplate: copyright off, conformance off
+</pre>
+
+# Introduction
+
+Eruopa is a game designed and created by the DataComm option class of 2022. This specification outlines its required behaviour.
+
+# Game Overview
+
+Europa is a multiplayer free-for-all game set in the alien world of Europa. Players fight because they are violent.
+
+# Protocol
+
+The protocol consists of a canonical game state maintained by a central server which sends this state out to clients at a constant tick rate of 100 times per second at exactly 100 millisecond intervals.
+
+Clients send updates to the server at the same tick rate.
+
+## Serverbound
+
+A client must send the <code>serverbound</code> packet to the game server every 100 ms.
+
+The <code>serverbound</code> packet has this structure:
+
+<pre highlight='c'>
+serverbound {
+  u64  packet_no;   /* Ordinal number. 0 for the first packet */
+  u16  client_id;   /* ID of client */
+  bool move_up;     /* Indicates that the player is moving up */
+  bool move_down;   /* Indicates that the player is moving down */
+  bool move_left;   /* Indicates that the player is moving left */
+  bool move_right;  /* Indicates that the player is moving right */
+  bool shoot_up;    /* Indicates that the player has shot up */
+  bool shoot_down;  /* Indicates that the player has shot down */
+  bool shoot_left;  /* Indicates that the player has shot left */
+  bool shoot_right; /* Indicates that the player has shot right */
+}
+</pre>
+
+## Clientbound
+
+The server must send the <code>clientbound</code> packet to each client every 100 ms.
+
+The <code>clientbound</code> packet has this structure:
+
+<pre highlight='c'>
+clientbound {
+  u64      packet_no;    /* Ordinal number. 0 for the first packet.
+                            Separate instance for each client */
+  u16      num_entities; /* Number of players in the world; length of
+                            clientbound.entities */
+  u16      num_bullets;  /* Number of bullets in the world; length of
+                            clientbound.bullets */
+  entity[] entities;     /* List of players */
+  bullet[] bullets;      /* List of bullets */
+}
+
+entity {
+  u16 client_id;  /* ID of player */
+  u16 position_x; /* X position of player */
+  u16 position_y; /* Y position of player */
+}
+
+bullet {
+  u16 position_x; /* X position of bullet */
+  u16 position_y; /* Y position of bullet */
+}
+</pre>
+
+## Client Behavior
+
+The client first connects to the server's TCP socket for new clients and waits to be given an ID that it will then use.
+
+The Client must be able to concurrently read input from the user and send it to the server, as well as read updates from the server over the network.
+
+When the client receives a <code>clientbound</code> packet from the server, it must perform the following processing:
+1. Reject the packet if <code>packet_no</code> is not greater than the last received <code>packet_no</code> from the server and return from this packet's processing
+2. Read each of the players from the <code>entities</code> field and draw them to the screen
+3. Read each bullet from the <code>bullets</code> field and draw them to the screen
+
+## Server Behavior
+
+The server will keep open three sockets: A TCP socket for new clients, a TCP socket for admin commands, and a UDP socket for game data transfer.
+
+When a connection comes in through the TCP socket for new clients, the server sends back a u16 number representing a unique player ID.
+
+When the server receives a <code>serverbound</code> packet from a client, it must perform the following processing:
+1. Reject the packet if <code>packet_no</code> is not greater than the last received <code>packet_no</code> from that client and return from this packet's processing
+2. Reject the packet if <code>client_id</code> does not exist
+3. Reject the packet if the player is attempting to leave the game boundaries
+4. Update the player's state according to the movement booleans. If all booleans are enabled, the player does not move
+5. Create a bullet according to the shoot bullet booleans. If all booleans are enabled, no bullet is created
+
+Every tick the server must update every bullet's position and every player's position.
+
+The server must ensure that if a bullet collides with any players, those players must have their position set to (0, 0).
+
+There is no player collision.
+
+
