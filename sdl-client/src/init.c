@@ -23,6 +23,8 @@ void initSDL(void)
     app.renderer = SDL_CreateRenderer(app.window, -1, rendererFlags);
 
     IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);
+
+    SDL_Init(SDL_INIT_AUDIO);
 }
 
 void cleanup(void)

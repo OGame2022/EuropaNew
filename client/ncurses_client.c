@@ -380,6 +380,7 @@ static void receive_udp_packet(const struct dc_posix_env *env, struct dc_error *
     fill_bullet_list(&clientInfo->bulletList, buffer + header_size + entity_packet_size * num_entities, num_bullets);
     free(buffer);
     // update_player_position(clientInfo);
+
     draw_game(clientInfo);
 }
 

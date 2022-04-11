@@ -66,18 +66,31 @@ void mapInput(void)
     if (app.keyboard[SDL_SCANCODE_UP])
     {
         clientInfo->clientInputState.shoot_up = true;
+        play_bullet_sound();
     }
     if (app.keyboard[SDL_SCANCODE_DOWN])
     {
         clientInfo->clientInputState.shoot_down = true;
+        play_bullet_sound();
     }
     if (app.keyboard[SDL_SCANCODE_LEFT])
     {
         clientInfo->clientInputState.shoot_left = true;
+        play_bullet_sound();
+
     }
     if (app.keyboard[SDL_SCANCODE_RIGHT])
     {
         clientInfo->clientInputState.shoot_right= true;
+        play_bullet_sound();
     }
 
+}
+
+void play_bullet_sound(void) {
+    SDL_AudioSpec WAV_spec;
+    uint32_t WAV_length;
+    uint8_t *WAV_buffer;
+
+    SDL_LoadWAV("../gfx/Sound_userShoot.wav", &WAV_spec, &WAV_buffer, &WAV_length);
 }
