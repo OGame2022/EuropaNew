@@ -3,6 +3,8 @@ static void do_bullets(const uint8_t * buf);
 static void do_players(const uint8_t * buf);
 static void free_players(void);
 static void free_bullets(void);
+static void draw_bullets(void);
+static void draw_players(void);
 
 static SDL_Texture  *bulletTexture;
 static SDL_Texture *enemyTexture;
@@ -32,6 +34,10 @@ void do_players(const uint8_t * buf)
         {
             new_entity->texture = playerTexture;
         }
+        else
+        {
+            new_entity->texture = enemyTexture;
+        }
         new_entity->position_x = (uint16_t)(buf[2 + shift] | (uint16_t)buf[3 + shift] << 8);
         new_entity->position_y = (uint16_t)(buf[4 + shift] | (uint16_t)buf[5 + shift] << 8);
 
@@ -51,6 +57,7 @@ void do_bullets(const uint8_t * buf)
         bullet *new_entity     = calloc(1, sizeof(bullet));
         new_entity->position_x = (uint16_t)(buf[0 + shift] | (uint16_t)buf[1 + shift] << 8);
         new_entity->position_y = (uint16_t)(buf[2 + shift] | (uint16_t)buf[3 + shift] << 8);
+        new_entity->texture = bulletTexture;
         shift += 4;
         bullet_node *bulletNode          = calloc(1, sizeof(bullet_node));
         bulletNode->bullet               = new_entity;
@@ -74,7 +81,6 @@ void free_bullets()
 
 void free_players()
 {
-    printf("players freed\n");
     client_node *node = clientInfo->client_entities;
     while(node)
     {
@@ -84,4 +90,30 @@ void free_players()
         node = temp;
     }
     clientInfo->client_entities = NULL;
+}
+
+void draw_players()
+{
+    client_node *node = clientInfo->client_entities;
+    while(node)
+    {
+        blit(node->client_entity->texture, node->client_entity->position_x * 10, node->client_entity->position_y * 10);
+        node = node->next;
+    }
+}
+
+void draw_bullets()
+{
+    bullet_node  *node = clientInfo->bulletList;
+    while (node)
+    {
+        blit(node->bullet->texture, node->bullet->position_x * 10, node->bullet->position_y * 10);
+        node = node->next;
+    }
+}
+
+void draw()
+{
+    draw_players();
+    draw_bullets();
 }

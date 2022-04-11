@@ -40,7 +40,6 @@ void send_input()
 
     if(clientInfo->client_entity)
     {
-
         uint8_t packed_byte = 0;
         packed_byte |= (clientInfo->clientInputState.move_up << 0);
         packed_byte |= (clientInfo->clientInputState.move_down << 1);
@@ -170,20 +169,11 @@ int  receive_udp_packet(char *buffer)
     ssize_t count;
     count = recvfrom(clientInfo->udp_socket, header, (size_t)header_size,
                      MSG_PEEK | MSG_DONTWAIT, NULL, NULL);
-//    if (errno == EAGAIN)
-//    {
-//        fprintf(stderr, "EAGAIN\n");
-//    }
-//    else
-//    {
-//        fprintf(stderr, "data here\n");
-//    }
 
     if (count < 12 || errno == EAGAIN)
     {
         return 1;
     }
-
 
     uint64_t packet_no =
             (uint64_t)((uint64_t)header[7] | (uint64_t)header[6] << 8 |

@@ -47,6 +47,7 @@ typedef struct {
     uint16_t position_y;
     short direction_x;
     short direction_y;
+    SDL_Texture *texture;
 } bullet;
 
 typedef struct client_node {

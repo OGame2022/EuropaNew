@@ -4,10 +4,12 @@ int main(int argc, char *argv[])
 {
     long then;
     float remainder;
+
     memset(&app, 0, sizeof(App));
     initSDL();
     atexit(cleanup);
     then = SDL_GetTicks();
+
     init_connection();
     init_stage();
     while (1)
@@ -17,7 +19,7 @@ int main(int argc, char *argv[])
 
         send_input();
         prepareScene();
-        // draw shit
+        draw();
         presentScene();
 
         capFrameRate(&then, &remainder);
@@ -25,7 +27,7 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-static void capFrameRate(long *then, float *remainder)
+void capFrameRate(long *then, float *remainder)
 {
     long wait, frameTime;
     wait = 16 + *remainder;
